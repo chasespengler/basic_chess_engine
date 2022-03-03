@@ -1,7 +1,6 @@
 #Responsible for storing all info about current state of game and current valid moves and move log
 import numpy as np
 
-
 class game_board():
     def __init__(self):
         #8x8 2d np array of two char string where first indicates color piece and second indicates piece type
