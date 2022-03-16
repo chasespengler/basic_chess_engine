@@ -1,4 +1,5 @@
 #Responsible for user input and displaying current game board object
+from numpy import squeeze
 import pygame as p
 import chess_engine
 
@@ -23,10 +24,33 @@ def main():
     gs = chess_engine.game_board()
     load_imgs() #only do this once so that they're in memory
     running = True
+    selected_sq = () #keeps track of the last click
+    player_clicks = [] #keeps track of player clicks (two tuples: [(6, 4), (4, 4)])
     while running:
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
+            elif e.type == p.MOUSEBUTTONDOWN:
+                # (x, y) location of mouse
+                location = p.mouse.get_pos()
+                #since board is entire screen, there is no need to reset based off origin
+                col = location[0] // SQ_size
+                row = location[1] // SQ_size
+                #check to see if piece is moved to a different square
+                if selected_sq == (row, col):
+                    selected_sq = ()
+                    player_clicks = []
+                else:
+                    selected_sq = (row, col)
+                    player_clicks.append(selected_sq)
+                #check to see if the click was the second click indicating piece has been moved
+                if len(player_clicks) == 2:
+                    #determine how the board plays the move as well as retain the move log
+                    move = chess_engine.move(player_clicks[0], player_clicks[1], gs.board)
+                    print(move.convert_notation())
+                    gs.make_move(move)
+                    selected_sq = ()
+                    player_clicks = []
         draw_game_board(screen, gs)
         clock.tick(max_fps)
         p.display.flip()
