@@ -95,9 +95,9 @@ class game_board():
                     break
                 i += 1
 
-            '''
+        '''
+        #First attempt at rook logic, inefficient but works
         if r > 0:
-            #First attempt at rook logic, inefficient but works
             if self.board[r-i][c][0] == "b" and self.white_turn:
                 moves.append(move((r, c), (r-i, c), self.board))
             elif self.board[r-i][c][0] =="w" and self.black_turn:
@@ -111,7 +111,7 @@ class game_board():
                     moves.append(move((r, c), (r-i, c), self.board))
                 elif self.board[r-i][c][0] =="w" and self.black_turn:
                     moves.append(move((r, c), (r-i, c), self.board))
-                '''
+        '''
 
         #Vertical down
         i = 1
@@ -194,7 +194,8 @@ class game_board():
     
     #adds possible moves for the queen at passed location to moves list
     def queen_moves(self, r, c, moves):
-        pass
+        self.rook_moves(r, c, moves)
+        self.bishop_moves(r, c, moves)
 
     #adds possible moves for the king at passed location to moves list
     def king_moves(self, r, c, moves):
