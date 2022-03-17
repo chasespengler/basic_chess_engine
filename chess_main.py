@@ -21,7 +21,13 @@ def main():
     screen = p.display.set_mode((WIDTH, HEIGHT))
     clock = p.time.Clock()
     screen.fill(p.Color("white"))
+
+    #initialize gamestate
     gs = chess_engine.game_board()
+
+    #Finding valid moves
+    current_valid_moves = gs.valid_moves()
+    move_made = False
     load_imgs() #only do this once so that they're in memory
     running = True
     selected_sq = () #keeps track of the last click
@@ -30,6 +36,7 @@ def main():
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
+            #Mouse Handler
             elif e.type == p.MOUSEBUTTONDOWN:
                 # (x, y) location of mouse
                 location = p.mouse.get_pos()
@@ -48,9 +55,25 @@ def main():
                     #determine how the board plays the move as well as retain the move log
                     move = chess_engine.move(player_clicks[0], player_clicks[1], gs.board)
                     print(move.convert_notation())
-                    gs.make_move(move)
+                    print(gs.move_log)
+                    #checking validity
+                    if move in current_valid_moves:
+                        gs.make_move(move)
+                        move_made = True
                     selected_sq = ()
                     player_clicks = []
+            #Key Handlers
+            elif e.type == p.KEYDOWN:
+                #Undo button when z is pressed
+                if e.key == p.K_z:
+                    gs.undo_move()
+                    move_made = True
+
+        #Regenerate current valid moves
+        if move_made:
+            current_valid_moves = gs.valid_moves()
+            move_made = False
+
         draw_game_board(screen, gs)
         clock.tick(max_fps)
         p.display.flip()
