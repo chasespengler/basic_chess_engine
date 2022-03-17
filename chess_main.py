@@ -56,6 +56,7 @@ def main():
                     move = chess_engine.move(player_clicks[0], player_clicks[1], gs.board)
                     print(move.convert_notation())
                     print(gs.move_log)
+                    print(gs.black_turn)
                     #checking validity
                     if move in current_valid_moves:
                         gs.make_move(move)
