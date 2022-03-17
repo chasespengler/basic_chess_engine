@@ -1,4 +1,5 @@
 #Responsible for storing all info about current state of game and current valid moves and move log
+from re import L
 import numpy as np
 
 class game_board():
@@ -72,38 +73,115 @@ class game_board():
     def rook_moves(self, r, c, moves):
         #Vertical up
         i = 1
-        if r - i > 0:
+        #Check to ensure that rook isn't already on the top rank
+        if r > 0:
+            while i < 8:
+                #Check to ensure move is within the board dims
+                if r - i < 0:
+                    break
+                #Open space move
+                elif self.board[r-i][c] == "--":
+                    moves.append(move((r, c), (r-i, c), self.board))
+                #White capture move
+                elif self.board[r-i][c][0] == "b" and self.white_turn:
+                    moves.append(move((r, c), (r-i, c), self.board))
+                    break
+                #Black capture move
+                elif self.board[r-i][c][0] == "w" and self.black_turn:
+                    moves.append(move((r, c), (r-i, c), self.board))
+                    break
+                #Check for own piece (only other alternative at this point)
+                else:
+                    break
+                i += 1
+
+            '''
+        if r > 0:
+            #First attempt at rook logic, inefficient but works
+            if self.board[r-i][c][0] == "b" and self.white_turn:
+                moves.append(move((r, c), (r-i, c), self.board))
+            elif self.board[r-i][c][0] =="w" and self.black_turn:
+                moves.append(move((r, c), (r-i, c), self.board))           
             while self.board[r-i][c] == "--":
                 moves.append(move((r, c), (r-i, c), self.board))
                 i += 1
                 if r - i == 0:
                     break
+                elif self.board[r-i][c][0] == "b" and self.white_turn:
+                    moves.append(move((r, c), (r-i, c), self.board))
+                elif self.board[r-i][c][0] =="w" and self.black_turn:
+                    moves.append(move((r, c), (r-i, c), self.board))
+                '''
 
         #Vertical down
         i = 1
-        if r + i < 7:
-            while self.board[r+i][c] == "--":
-                moves.append(move((r, c), (r+i, c), self.board))
-                i += 1
-                if r + i == 7:
+        #Check to ensure that rook isn't already on the bottom rank
+        if r < 7:
+            while i < 8:
+                #Check to ensure move is within the board dims
+                if r + i > 7:
                     break
-
+                #Open space move
+                elif self.board[r+i][c] == "--":
+                    moves.append(move((r, c), (r+i, c), self.board))
+                #White capture move
+                elif self.board[r+i][c][0] == "b" and self.white_turn:
+                    moves.append(move((r, c), (r+i, c), self.board))
+                    break
+                #Black capture move
+                elif self.board[r+i][c][0] == "w" and self.black_turn:
+                    moves.append(move((r, c), (r+i, c), self.board))
+                    break
+                #Check for own piece (only other alternative at this point)
+                else:
+                    break
+                i += 1
         #Horizontal right
         i = 1
-        if c + i < 7:
-            while self.board[r][c+i] == "--":
-                moves.append(move((r, c), (r, c+i), self.board))
-                i += 1
-                if c + i == 7:
+        #Check to ensure that rook isn't already on the furthest right file
+        if c < 7:
+            while i < 8:
+                #Check to ensure move is within the board dims
+                if c + i > 7:
                     break
+                #Open space move
+                elif self.board[r][c+i] == "--":
+                    moves.append(move((r, c), (r, c+i), self.board))
+                #White capture move
+                elif self.board[r][c+i][0] == "b" and self.white_turn:
+                    moves.append(move((r, c), (r, c+i), self.board))
+                    break
+                #Black capture move
+                elif self.board[r][c+i][0] == "w" and self.black_turn:
+                    moves.append(move((r, c), (r, c+i), self.board))
+                    break
+                #Check for own piece (only other alternative at this point)
+                else:
+                    break
+                i += 1
         #Horizontal left
         i = 1
-        if c - i > 0:
-            while self.board[r][c-i] == "--":
-                moves.append(move((r, c), (r, c+i), self.board))
-                i += 1
-                if c - i == 0:
-                    break        
+        #Check to ensure that rook isn't already on the furthest left file
+        if c > 0:
+            while i < 8:
+                #Check to ensure move is within the board dims
+                if c - i < 0:
+                    break
+                #Open space move
+                elif self.board[r][c-i] == "--":
+                    moves.append(move((r, c), (r, c-i), self.board))
+                #White capture move
+                elif self.board[r][c-i][0] == "b" and self.white_turn:
+                    moves.append(move((r, c), (r, c-i), self.board))
+                    break
+                #Black capture move
+                elif self.board[r][c-i][0] == "w" and self.black_turn:
+                    moves.append(move((r, c), (r, c-i), self.board))
+                    break
+                #Check for own piece (only other alternative at this point)
+                else:
+                    break
+                i += 1    
             
 
     #adds possible moves for the knight at passed location to moves list
