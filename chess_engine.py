@@ -69,7 +69,7 @@ class game_board():
                     moves.append(move((r, c), (r+1, c-1), self.board))      
 
     #adds possible moves for the rook at passed location to moves list
-    #NEED TO ADD CAPTURES TO LOGIC
+    #could definitely be made more efficient, same with bishop function (loop through an array of vectors?)
     def rook_moves(self, r, c, moves):
         #Vertical up
         i = 1
@@ -186,11 +186,106 @@ class game_board():
 
     #adds possible moves for the knight at passed location to moves list
     def knight_moves(self, r, c, moves):
-        pass
+        #Potential knight move vectors
+        vectors = ((2, -1), (2, 1), (-2, 1), (-2, -1), (-1, 2), (-1, -2), (1, 2), (1, -2))
+        #Looping through potential moves
+        for vect in vectors:
+            #Assigning ending position location to variable
+            end_pos = (r + vect[0], c + vect[1])
+            #Ensuring ending position is still on the board
+            if end_pos[0] < 0 or end_pos[0] > 7 or end_pos[1] > 7 or end_pos[1] < 0:
+                continue
+            #Checking that ending position is not white's own piece
+            elif self.board[end_pos[0], end_pos[1]][0] == "w" and self.white_turn:
+                continue
+            elif self.board[end_pos[0], end_pos[1]][0] == "b" and self.black_turn:
+                continue
+            else:
+                moves.append(move((r, c), (end_pos[0], end_pos[1]), self.board))
 
     #adds possible moves for the bishop at passed location to moves list
     def bishop_moves(self, r, c, moves):
-        pass
+        #Up and to the right
+        i = 1
+        while i < 8:
+            #checking for column and row viability
+            if c + i > 7:
+                break
+            elif r - i < 0:
+                break
+            else:
+                #Blank space
+                if self.board[r-i][c+i] == "--":
+                    moves.append(move((r, c), (r-i, c+i), self.board))
+                #White caputre move
+                elif self.board[r-i][c+i][0] == "b" and self.white_turn:
+                    moves.append(move((r, c), (r-i, c+i), self.board))
+                #Black capture move
+                elif self.board[r-i][c+i][0] == "w" and self.black_turn:
+                    moves.append(move((r, c), (r-i, c+i), self.board))
+                else:
+                    break
+            i += 1
+
+        #Up and to the left
+        i = 1
+        while i < 8:
+            if c - i < 0:
+                break
+            elif r - i < 0:
+                break
+            else:
+                #Blank space
+                if self.board[r-i][c-i] == "--":
+                    moves.append(move((r, c), (r-i, c-i), self.board))
+                elif self.board[r-i][c-i][0] == "b" and self.white_turn:
+                    moves.append(move((r, c), (r-i, c-i), self.board))
+                #Black capture move
+                elif self.board[r-i][c-i][0] == "w" and self.black_turn:
+                    moves.append(move((r, c), (r-i, c-i), self.board))
+                else:
+                    break
+            i += 1
+
+        #Down and to the left
+        i = 1
+        while i < 8:
+            if c - i < 0:
+                break
+            elif r + i > 7:
+                break
+            else:
+                #Blank space
+                if self.board[r+i][c-i] == "--":
+                    moves.append(move((r, c), (r+i, c-i), self.board))
+                elif self.board[r+i][c-i][0] == "b" and self.white_turn:
+                    moves.append(move((r, c), (r+i, c-i), self.board))
+                #Black capture move
+                elif self.board[r+i][c-i][0] == "w" and self.black_turn:
+                    moves.append(move((r, c), (r+i, c-i), self.board))
+                else:
+                    break
+            i += 1
+
+        #Down and to the right
+        i = 1
+        while i < 8:
+            if c + i > 7:
+                break
+            elif r + i > 7:
+                break
+            else:
+                #Blank space
+                if self.board[r+i][c+i] == "--":
+                    moves.append(move((r, c), (r+i, c+i), self.board))
+                elif self.board[r+i][c+i][0] == "b" and self.white_turn:
+                    moves.append(move((r, c), (r+i, c+i), self.board))
+                #Black capture move
+                elif self.board[r+i][c+i][0] == "w" and self.black_turn:
+                    moves.append(move((r, c), (r+i, c+i), self.board))
+                else:
+                    break
+            i += 1              
     
     #adds possible moves for the queen at passed location to moves list
     def queen_moves(self, r, c, moves):
@@ -199,8 +294,23 @@ class game_board():
 
     #adds possible moves for the king at passed location to moves list
     def king_moves(self, r, c, moves):
-        pass
+        vectors = ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1))
+        #Looping through potential moves
+        for vect in vectors:
+            #Assigning ending position location to variable
+            end_pos = (r + vect[0], c + vect[1])
+            #Ensuring ending position is still on the board
+            if end_pos[0] < 0 or end_pos[0] > 7 or end_pos[1] > 7 or end_pos[1] < 0:
+                continue
+            #Checking that ending position is not white's own piece
+            elif self.board[end_pos[0], end_pos[1]][0] == "w" and self.white_turn:
+                continue
+            elif self.board[end_pos[0], end_pos[1]][0] == "b" and self.black_turn:
+                continue
+            else:
+                moves.append(move((r, c), (end_pos[0], end_pos[1]), self.board))
 
+                
     #Takes all possible moves and then checks to ensure that any that result
     #in the player being in check are removed
     def valid_moves(self):
