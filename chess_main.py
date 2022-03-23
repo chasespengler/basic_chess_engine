@@ -22,7 +22,7 @@ def main():
     clock = p.time.Clock()
     screen.fill(p.Color("white"))
 
-    #initialize gamestate
+    #Initialize gamestate
     gs = chess_engine.game_board()
 
     #Finding valid moves
@@ -61,8 +61,12 @@ def main():
                     if move in current_valid_moves:
                         gs.make_move(move)
                         move_made = True
-                    selected_sq = ()
-                    player_clicks = []
+                        selected_sq = ()
+                        player_clicks = []
+                    #added to minimize number of clicks when trying to make move
+                    #player can now change selected piece
+                    else:
+                        player_clicks = [selected_sq]
             #Key Handlers
             elif e.type == p.KEYDOWN:
                 #Undo button when z is pressed

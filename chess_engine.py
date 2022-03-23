@@ -19,19 +19,58 @@ class game_board():
 
         self.white_turn = True
         self.black_turn = False
-        self.white_castlability = True
-        self.black_castleability = True
+        self.white_qs_castleability = True
+        self.white_ks_castleability = True
+        self.black_qs_castleability = True
+        self.black_ks_castleability = True
+        self.white_in_check = False
+        self.black_in_check = False
+        self.white_king_loc = (7, 4)
+        self.black_king_loc = (0, 4)
+        self.white_checks = []
+        self.black_checks = []
+        self.white_pins = []
+        self.black_pins = []
         self.move_log = []
-        #maps letters of piece type to a function that calls the piece's moves
+        #Maps letters of piece type to a function that calls the piece's moves
         self.move_function = {"P": self.pawn_moves, "R": self.rook_moves, "N": self.knight_moves, "B": self.bishop_moves, "Q": self.queen_moves, "K": self.king_moves}
 
-    #basic move function (will not work for castling, en passant, or pawn promotion)
+    #Basic move function (will not work for castling, en passant, or pawn promotion)
     def make_move(self, move):
         self.board[move.start_row][move.start_col] = "--"
         self.board[move.end_row][move.end_col] = move.piece_moved
         self.move_log.append(move)
         self.white_turn = not self.white_turn
         self.black_turn = not self.black_turn
+        self.black_checks = []
+        self.black_pins = []
+        self.white_checks = []
+        self.white_pins = []
+        self.white_in_check = False
+        self.black_in_check = False
+        #Adjusting ability to castle
+        if self.white_ks_castleability or self.white_qs_castleability:
+            if move.piece_moved == "wK":
+                self.white_ks_castleability = False
+                self.white_qs_castleability = False
+            elif move.start_row == 7 and move.start_col == 0:
+                self.white_ks_castleability = False
+            elif move.start_row == 7 and move.start_col == 7:
+                self.white_qs_castleability = False
+        if self.black_ks_castleability or self.black_qs_castleability:
+            if move.piece_moved == "bK":
+                self.black_ks_castleability = False
+                self.black_qs_castleability = False
+            elif move.start_row == 0 and move.start_col == 0:
+                self.black_ks_castleability = False
+            elif move.start_row == 0 and move.start_col == 7:
+                self.black_qs_castleability = False
+        #Updating king location
+        if move.piece_moved == "wK":
+            self.white_king_loc = (move.end_row, move.end_col)
+        elif move.piece_moved == "bK":
+            self.black_king_loc = (move.end_row, move.end_col)
+        
 
     def undo_move(self):
         if len(self.move_log) > 0:
@@ -41,16 +80,16 @@ class game_board():
             self.white_turn = not self.white_turn
             self.black_turn = not self.black_turn
 
-    #adds possible moves for the pawn at passed location to moves list
+    #Adds possible moves for the pawn at passed location to moves list
     def pawn_moves(self, r, c, moves):
         if self.board[r][c][0] == "w":
             if self.board[r-1][c] == "--":
                 moves.append(move((r, c), (r-1, c), self.board))
                 if r == 6 and self.board[r-2][c]:
                     moves.append(move((r, c), (r-2, c), self.board))
-            #ensuring diagonal move is within space of board
+            #Ensuring diagonal move is within space of board
             if (c + 1) < 8 and (c - 1) >= 0:
-                #ensuring that there is a piece diagonal to capture and that it is a black piece
+                #Ensuring that there is a piece diagonal to capture and that it is a black piece
                 if self.board[r-1][c+1][0] == "b":
                     moves.append(move((r, c), (r-1, c+1), self.board))
                 if self.board[r-1][c-1][0] == "b":
@@ -60,16 +99,16 @@ class game_board():
                 moves.append(move((r, c), (r+1, c), self.board))
                 if r == 1 and self.board[r+2][c]:
                     moves.append(move((r, c), (r+2, c), self.board))
-            #ensuring diagonal move is within space of board
+            #Ensuring diagonal move is within space of board
             if (c + 1) < 8 and (c - 1) >= 0:
-                #ensuring that there is a piece diagonal to capture and that it is a white piece
+                #Ensuring that there is a piece diagonal to capture and that it is a white piece
                 if self.board[r+1][c+1][0] == "w":
                     moves.append(move((r, c), (r+1, c+1), self.board))
                 if self.board[r+1][c-1][0] == "w":
                     moves.append(move((r, c), (r+1, c-1), self.board))      
 
-    #adds possible moves for the rook at passed location to moves list
-    #could definitely be made more efficient, same with bishop function (loop through an array of vectors?)
+    #Adds possible moves for the rook at passed location to moves list
+    #could definitely be made more efficient, same with bishop function (loop through a tuple of vectors like with knight logic)
     def rook_moves(self, r, c, moves):
         #Vertical up
         i = 1
@@ -184,7 +223,7 @@ class game_board():
                 i += 1    
             
 
-    #adds possible moves for the knight at passed location to moves list
+    #Adds possible moves for the knight at passed location to moves list
     def knight_moves(self, r, c, moves):
         #Potential knight move vectors
         vectors = ((2, -1), (2, 1), (-2, 1), (-2, -1), (-1, 2), (-1, -2), (1, 2), (1, -2))
@@ -198,17 +237,18 @@ class game_board():
             #Checking that ending position is not white's own piece
             elif self.board[end_pos[0], end_pos[1]][0] == "w" and self.white_turn:
                 continue
+            #Checking that ending position is not black's own piece
             elif self.board[end_pos[0], end_pos[1]][0] == "b" and self.black_turn:
                 continue
             else:
                 moves.append(move((r, c), (end_pos[0], end_pos[1]), self.board))
 
-    #adds possible moves for the bishop at passed location to moves list
+    #Adds possible moves for the bishop at passed location to moves list
     def bishop_moves(self, r, c, moves):
         #Up and to the right
         i = 1
         while i < 8:
-            #checking for column and row viability
+            #Checking for column and row viability
             if c + i > 7:
                 break
             elif r - i < 0:
@@ -217,7 +257,7 @@ class game_board():
                 #Blank space
                 if self.board[r-i][c+i] == "--":
                     moves.append(move((r, c), (r-i, c+i), self.board))
-                #White caputre move
+                #White capture move
                 elif self.board[r-i][c+i][0] == "b" and self.white_turn:
                     moves.append(move((r, c), (r-i, c+i), self.board))
                 #Black capture move
@@ -238,6 +278,7 @@ class game_board():
                 #Blank space
                 if self.board[r-i][c-i] == "--":
                     moves.append(move((r, c), (r-i, c-i), self.board))
+                #White capture move
                 elif self.board[r-i][c-i][0] == "b" and self.white_turn:
                     moves.append(move((r, c), (r-i, c-i), self.board))
                 #Black capture move
@@ -287,12 +328,12 @@ class game_board():
                     break
             i += 1              
     
-    #adds possible moves for the queen at passed location to moves list
+    #Adds possible moves for the queen at passed location to moves list
     def queen_moves(self, r, c, moves):
         self.rook_moves(r, c, moves)
         self.bishop_moves(r, c, moves)
 
-    #adds possible moves for the king at passed location to moves list
+    #Adds possible moves for the king at passed location to moves list
     def king_moves(self, r, c, moves):
         vectors = ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, 1), (1, -1), (-1, -1))
         #Looping through potential moves
@@ -305,16 +346,150 @@ class game_board():
             #Checking that ending position is not white's own piece
             elif self.board[end_pos[0], end_pos[1]][0] == "w" and self.white_turn:
                 continue
+            #Checking that ending position is not black's own piece
             elif self.board[end_pos[0], end_pos[1]][0] == "b" and self.black_turn:
                 continue
             else:
                 moves.append(move((r, c), (end_pos[0], end_pos[1]), self.board))
 
-                
+    #Checks for checks and pins and then adds the location of any piece threatening check or any pinned piece to the appropriate list
+    def check_for_checks(self):
+        vectors = ((1, 0), (1, 1), (1, -1), (-1, 0), (-1, 1), (-1, -1), (0, 1), (0, -1))
+        if self.white_turn:
+            r = self.white_king_loc[0]
+            c = self.white_king_loc[1]
+        else:
+            r = self.black_king_loc[0]
+            c = self.black_king_loc[1]
+        
+        for vect in vectors:
+            #Variables used to help determine pins
+            #If there's a single white piece beyond the king in a given direction there may be a pin
+            #If there's two then there are no pins in that direction
+            first_piece = True
+            for i in range(1, 8):
+                end_pos = (r + vect[0] * i, c + vect[1] * i)
+                #Checking to ensure end position is within the board
+                if 0 <= end_pos[0] <= 7 and 0 <= end_pos[1] <= 7:
+                    occupant = self.board[end_pos[0], end_pos[1]]
+                    if occupant == "--":
+                        continue
+                    elif occupant[0] == "w" and self.white_turn:
+                        if first_piece:
+                            first_piece = False
+                            pin_pos = end_pos
+                            continue
+                        else:
+                            break
+                    elif occupant[0] == "b" and self.black_turn:
+                        if first_piece:
+                            first_piece = False
+                            pin_pos = end_pos
+                            continue
+                        else:
+                            break
+                    #White's turn
+                    elif self.white_turn:
+                        #Checking for horizontal and vertical attacking pieces
+                        if r == end_pos[0] or c == end_pos[1]:
+                            if occupant == "bR" or occupant == "bQ":
+                                if first_piece:
+                                    self.white_checks.append(end_pos)
+                                    self.white_in_check = True
+                                    break
+                                else:
+                                    self.white_pins.append(pin_pos)
+                                    break
+                        #Checking for attacking pawns
+                        elif i == 1 and occupant == "bP" and r == end_pos[0] + 1:
+                            if c - 1 == end_pos[1] or c + 1 == end_pos[1]:
+                                self.white_checks.append(end_pos)
+                                self.white_in_check = True
+                                break
+                        #Diagonal attacking pieces
+                        else:
+                            if occupant == "bB" or occupant == "bQ":
+                                if first_piece:
+                                    self.white_checks.append(end_pos)
+                                    self.white_in_check = True
+                                    break
+                                else:
+                                    self.white_pins.append(pin_pos)
+                                    break
+                    #Black's turn
+                    else:
+                        #Horizontals and verticals
+                        if r == end_pos[0] or c == end_pos[1]:
+                            if occupant == "wR" or occupant == "wQ":
+                                if first_piece:
+                                    self.black_checks.append(end_pos)
+                                    self.black_in_check = True
+                                    break
+                                else:
+                                    self.black_pins.append(pin_pos)
+                                    break
+                        #Attacking pawns
+                        elif i == 1 and occupant == "wP" and r == end_pos[0] - 1:
+                            if c - 1 == end_pos[1] or c + 1 == end_pos[1]:
+                                self.black_checks.append(end_pos)
+                                self.black_in_check = True
+                                break
+                        #Diagonals
+                        else:
+                            if occupant == "wB" or occupant == "wQ":
+                                if first_piece:
+                                    self.black_checks.append(end_pos)
+                                    self.black_in_check = True
+                                    break
+                                else:
+                                    self.black_pins.append(pin_pos)
+                                    break
+        
+        #Knight checks
+        vectors = ((2, -1), (2, 1), (-2, 1), (-2, -1), (-1, 2), (-1, -2), (1, 2), (1, -2))
+        for vect in vectors:
+            end_pos = (r + vect[0], c + vect[1])
+            if 0 <= end_pos[0] <= 7 and 0 <= end_pos[1] <= 7:
+                occupant = self.board[end_pos[0], end_pos[1]]
+                if self.white_turn and occupant == "bN":
+                    self.white_in_check = True
+                    self.white_checks.append(end_pos)
+                elif self.black_turn and occupant == "wN":
+                    self.black_in_check = True
+                    self.black_checks.append(end_pos)
+
+
     #Takes all possible moves and then checks to ensure that any that result
     #in the player being in check are removed
     def valid_moves(self):
-        return self.possible_moves()
+        current_moves = self.possible_moves()
+        self.check_for_checks()
+        if self.white_in_check:
+            #Ensure that all moves resulting in white still being in check are removed
+            pass
+        elif self.black_in_check:
+            #Ensure that all moves resulting in black still being in check are removed
+            pass
+        elif len(self.white_pins) > 0:
+            #Remove all moves made by the pinned piece
+            pass
+        elif len(self.black_pins) > 0:
+            #Remvoe all moves made by the pinned piece
+            pass
+
+        #Checking for stalemate
+        if len(current_moves) == 0 and (not self.white_in_check or not self.black_in_check):
+            print("stalemate")
+        #Checkmate
+        elif len(current_moves) == 0 and (self.white_in_check or self.black_in_check):
+            print("checkmate")
+            if self.white_in_check:
+                print("Black wins")
+            else:
+                print("White wins")
+        
+
+        return current_moves
 
     def possible_moves(self):
         moves = []
@@ -335,11 +510,11 @@ class game_board():
         return moves
 
 
-   
+                    
 
 
 class move():
-    #adding dictionaries for ease of logging moves/positions in chess notation
+    #Adding dictionaries for ease of logging moves/positions in chess notation
     ranks_rows = {"1": 7, "2": 6, "3": 5, "4": 4, "5": 3, "6": 2, "7": 1, "8": 0}
     rows_ranks = {v: k for k, v in ranks_rows.items()}
     files_cols = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
@@ -359,10 +534,10 @@ class move():
         if isinstance(other, move):
             return self.move_id == other.move_id
 
-    #converts the row and column pair to chess notation
+    #Converts the row and column pair to chess notation
     def convert_notation(self):
         return self.get_rankfile(self.start_row, self.start_col) + self.get_rankfile(self.end_row, self.end_col)
 
-    #accesses the dictionary and returns the rank and file based on row and column values
+    #Accesses the dictionary and returns the rank and file based on row and column values
     def get_rankfile(self, r, c):
         return self.cols_files[c] + self.rows_ranks[r]
