@@ -70,6 +70,7 @@ class game_board():
             self.white_king_loc = (move.end_row, move.end_col)
         elif move.piece_moved == "bK":
             self.black_king_loc = (move.end_row, move.end_col)
+
         
 
     def undo_move(self):
@@ -79,6 +80,15 @@ class game_board():
             self.board[last_move.end_row][last_move.end_col] = last_move.piece_captured
             self.white_turn = not self.white_turn
             self.black_turn = not self.black_turn
+            #Updating king location
+            if last_move.piece_moved == "wK":
+                self.white_king_loc = (last_move.start_row, last_move.start_col)
+            elif last_move.piece_moved == "bK":
+                self.black_king_loc = (last_move.start_row, last_move.start_col)
+            self.black_checks = []
+            self.black_pins = []
+            self.white_checks = []
+            self.white_pins = []
 
     #Adds possible moves for the pawn at passed location to moves list
     def pawn_moves(self, r, c, moves):
@@ -133,24 +143,6 @@ class game_board():
                 else:
                     break
                 i += 1
-
-        '''
-        #First attempt at rook logic, inefficient but works
-        if r > 0:
-            if self.board[r-i][c][0] == "b" and self.white_turn:
-                moves.append(move((r, c), (r-i, c), self.board))
-            elif self.board[r-i][c][0] =="w" and self.black_turn:
-                moves.append(move((r, c), (r-i, c), self.board))           
-            while self.board[r-i][c] == "--":
-                moves.append(move((r, c), (r-i, c), self.board))
-                i += 1
-                if r - i == 0:
-                    break
-                elif self.board[r-i][c][0] == "b" and self.white_turn:
-                    moves.append(move((r, c), (r-i, c), self.board))
-                elif self.board[r-i][c][0] =="w" and self.black_turn:
-                    moves.append(move((r, c), (r-i, c), self.board))
-        '''
 
         #Vertical down
         i = 1
@@ -458,25 +450,120 @@ class game_board():
                     self.black_in_check = True
                     self.black_checks.append(end_pos)
 
+    #Function to check if a given square is underattack on a given color's turn
+    def under_attack(self, r, c):
+        vectors = ((-1, 0), (1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1))
+        for j in range(0, len(vectors)):
+            vect = vectors[j]
+            for i in range(1, 8):
+                end_pos = (r + vect[0] * i, c + vect[1] * i)
+                if 0 <= end_pos[0] <=7 and 0 <= end_pos[1] <= 7:
+                    piece = self.board[end_pos[0], end_pos[1]]
+                    if piece == "--":
+                        continue
+                    elif self.white_turn and piece[0] == "w":
+                        break
+                    elif self.black_turn and piece[0] == "b":
+                        break
+                    elif self.white_turn and j < 4:
+                        if piece == "bQ" or piece == "bR":
+                            return True
+                    elif self.white_turn and j >= 4:
+                        if piece == "bQ" or piece == "bB":
+                            return True
+                        elif piece == "bP" and j >= 6 and i == 1:
+                            return True
+                    elif self.black_turn and j < 4:
+                        if piece == "wQ" or piece == "wR":
+                            return True   
+                    elif self.black_turn and j >= 4:
+                        if piece == "wQ" or piece == "wB":
+                            return True
+                        elif piece == "wP" and j < 6 and i == 1:
+                            return True
+                else:
+                    break
+
+        vectors = ((2, -1), (2, 1), (-2, 1), (-2, -1), (-1, 2), (-1, -2), (1, 2), (1, -2))
+        for vect in vectors:
+            end_pos = (r + vect[0], c + vect[1])
+            if 0 <= end_pos[0] <= 7 and 0 <= end_pos[1] <= 7:
+                piece = self.board[end_pos[0], end_pos[1]]
+                if self.white_turn and piece == "bN":
+                    return True
+                elif self.black_turn and piece == "wN":
+                    return True
+
+        return False
+            
+
 
     #Takes all possible moves and then checks to ensure that any that result
     #in the player being in check are removed
     def valid_moves(self):
-        current_moves = self.possible_moves()
         self.check_for_checks()
+        current_moves = self.possible_moves()   
         if self.white_in_check:
             #Ensure that all moves resulting in white still being in check are removed
-            pass
+            i = len(current_moves) - 1
+            while i >= 0:
+                current_move = current_moves[i]
+                self.make_move(current_move)
+                self.white_turn = not self.white_turn
+                self.black_turn = not self.black_turn
+                self.check_for_checks()
+                if self.white_in_check:
+                    z = current_moves.pop(i)
+                self.white_turn = not self.white_turn
+                self.black_turn = not self.black_turn
+                self.undo_move()
+                self.check_for_checks()
+                i -= 1
+                
         elif self.black_in_check:
             #Ensure that all moves resulting in black still being in check are removed
-            pass
-        elif len(self.white_pins) > 0:
+            i = len(current_moves) - 1
+            while i >= 0:
+                current_move = current_moves[i]
+                self.make_move(current_move)
+                self.white_turn = not self.white_turn
+                self.black_turn = not self.black_turn
+                self.check_for_checks()
+                if self.white_in_check:
+                    z = current_moves.pop(i)
+                self.white_turn = not self.white_turn
+                self.black_turn = not self.black_turn
+                self.undo_move()
+                self.check_for_checks()
+                i -= 1
+
+        if len(self.white_pins) and self.white_turn > 0:
             #Remove all moves made by the pinned piece
-            pass
-        elif len(self.black_pins) > 0:
+            i = len(current_moves) - 1
+            for pin in self.white_pins:
+                while i >= 0:
+                    if pin[0] == current_moves[i].start_row and pin[1] == current_moves[i].start_col:
+                        z = current_moves.pop(i)
+                    i -= 1
+
+        elif len(self.black_pins) and self.black_turn > 0:
             #Remvoe all moves made by the pinned piece
+            i = len(current_moves) - 1
+            for pin in self.black_pins:
+                while i >= 0:
+                    if pin[0] == current_moves[i].start_row and pin[1] == current_moves[i].start_col:
+                        z = current_moves.pop(i)
+                    i -= 1
+
+        #Add Castling
+        if self.white_ks_castleability:
             pass
 
+        #Add en passant
+
+        #Add pawn promotion...somewhere...but not here
+
+        #Pass this logic to main to end game
         #Checking for stalemate
         if len(current_moves) == 0 and (not self.white_in_check or not self.black_in_check):
             print("stalemate")
@@ -503,10 +590,10 @@ class game_board():
                     piece = self.board[r][c][1]
                     self.move_function[piece](r, c, moves)
         #unfucking code
+        all_moves = []
         for val in moves:
-            print("Piece: ", val.piece_moved)
-            print("Start: ", val.start_row, val.start_col)
-            print("End: ", val.end_row, val.end_col)
+            all_moves.append(("Piece: ", val.piece_moved, " Start: ", val.start_row, val.start_col, " End: ", val.end_row, val.end_col))
+        print(all_moves)
         return moves
 
 
