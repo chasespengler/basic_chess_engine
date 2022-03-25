@@ -49,6 +49,7 @@ class game_board():
         self.white_in_check = False
         self.black_in_check = False
         #Adjusting ability to castle
+        #Need to adjust from undo move
         if self.white_ks_castleability or self.white_qs_castleability:
             if move.piece_moved == "wK":
                 self.white_ks_castleability = False
@@ -355,7 +356,7 @@ class game_board():
             c = self.black_king_loc[1]
         
         for vect in vectors:
-            #Variables used to help determine pins
+            #Variable used to help determine pins
             #If there's a single white piece beyond the king in a given direction there may be a pin
             #If there's two then there are no pins in that direction
             first_piece = True
@@ -384,13 +385,15 @@ class game_board():
                     elif self.white_turn:
                         #Checking for horizontal and vertical attacking pieces
                         if r == end_pos[0] or c == end_pos[1]:
-                            if occupant == "bR" or occupant == "bQ":
+                            if occupant != "bR" or occupant != "bQ":
+                                break
+                            else:
                                 if first_piece:
                                     self.white_checks.append(end_pos)
                                     self.white_in_check = True
                                     break
                                 else:
-                                    self.white_pins.append(pin_pos)
+                                    self.white_pins.append((pin_pos, vect))
                                     break
                         #Checking for attacking pawns
                         elif i == 1 and occupant == "bP" and r == end_pos[0] + 1:
@@ -400,25 +403,29 @@ class game_board():
                                 break
                         #Diagonal attacking pieces
                         else:
-                            if occupant == "bB" or occupant == "bQ":
+                            if occupant != "bB" or occupant != "bQ":
+                                break
+                            else:
                                 if first_piece:
                                     self.white_checks.append(end_pos)
                                     self.white_in_check = True
                                     break
                                 else:
-                                    self.white_pins.append(pin_pos)
+                                    self.white_pins.append((pin_pos, vect))
                                     break
                     #Black's turn
                     else:
                         #Horizontals and verticals
                         if r == end_pos[0] or c == end_pos[1]:
-                            if occupant == "wR" or occupant == "wQ":
+                            if occupant != "wR" or occupant != "wQ":
+                                break
+                            else:
                                 if first_piece:
                                     self.black_checks.append(end_pos)
                                     self.black_in_check = True
                                     break
                                 else:
-                                    self.black_pins.append(pin_pos)
+                                    self.black_pins.append((pin_pos, vect))
                                     break
                         #Attacking pawns
                         elif i == 1 and occupant == "wP" and r == end_pos[0] - 1:
@@ -428,13 +435,15 @@ class game_board():
                                 break
                         #Diagonals
                         else:
-                            if occupant == "wB" or occupant == "wQ":
+                            if occupant != "wB" or occupant != "wQ":
+                                break
+                            else:
                                 if first_piece:
                                     self.black_checks.append(end_pos)
                                     self.black_in_check = True
                                     break
                                 else:
-                                    self.black_pins.append(pin_pos)
+                                    self.black_pins.append((pin_pos, vect))
                                     break
         
         #Knight checks
@@ -529,7 +538,7 @@ class game_board():
                 self.white_turn = not self.white_turn
                 self.black_turn = not self.black_turn
                 self.check_for_checks()
-                if self.white_in_check:
+                if self.black_in_check:
                     z = current_moves.pop(i)
                 self.white_turn = not self.white_turn
                 self.black_turn = not self.black_turn
@@ -537,23 +546,70 @@ class game_board():
                 self.check_for_checks()
                 i -= 1
 
-        if len(self.white_pins) and self.white_turn > 0:
-            #Remove all moves made by the pinned piece
+        if len(self.white_pins) > 0 and self.white_turn:
+            #Remove all moves made by the pinned white piece not in the direction (or opposite direction) of the pin
             i = len(current_moves) - 1
             for pin in self.white_pins:
                 while i >= 0:
-                    if pin[0] == current_moves[i].start_row and pin[1] == current_moves[i].start_col:
-                        z = current_moves.pop(i)
+                    move_vect_x = 0 if current_moves[i].end_row - current_moves[i].start_row == 0\
+                         else (current_moves[i].end_row - current_moves[i].start_row)/np.abs(current_moves[i].end_row - current_moves[i].start_row)
+                    move_vect_y = 0 if current_moves[i].end_col - current_moves[i].start_col == 0\
+                        else (current_moves[i].end_col - current_moves[i].start_col)/np.abs(current_moves[i].end_col - current_moves[i].start_col)
+                    if pin[0][0] == current_moves[i].start_row and pin[0][1] == current_moves[i].start_col:
+                        if pin[1][0] != move_vect_x and pin[1][1] != move_vect_y:
+                            z = current_moves.pop(i)
+                        elif pin[1][0] != -1 * move_vect_x and pin[1][1] != -1 * move_vect_y:
+                            z = current_moves.pop(i)
                     i -= 1
 
-        elif len(self.black_pins) and self.black_turn > 0:
-            #Remvoe all moves made by the pinned piece
+        elif len(self.black_pins) > 0 and self.black_turn:
+            #Remove all moves made by the black pinned piece not in the direction (or opposite direction) of the pin
             i = len(current_moves) - 1
             for pin in self.black_pins:
                 while i >= 0:
-                    if pin[0] == current_moves[i].start_row and pin[1] == current_moves[i].start_col:
-                        z = current_moves.pop(i)
+                    move_vect_x = 0 if current_moves[i].end_row - current_moves[i].start_row == 0\
+                         else (current_moves[i].end_row - current_moves[i].start_row)/np.abs(current_moves[i].end_row - current_moves[i].start_row)
+                    move_vect_y = 0 if current_moves[i].end_col - current_moves[i].start_col == 0\
+                        else (current_moves[i].end_col - current_moves[i].start_col)/np.abs(current_moves[i].end_col - current_moves[i].start_col)
+                    if pin[0][0] == current_moves[i].start_row and pin[0][1] == current_moves[i].start_col:
+                        if pin[1][0] != move_vect_x and pin[1][1] != move_vect_y:
+                            z = current_moves.pop(i)
+                        elif pin[1][0] != (-1 * move_vect_x) and pin[1][1] != (-1 * move_vect_y):
+                            z = current_moves.pop(i)
                     i -= 1
+
+        #Removing moves that result in the king being within range of the opposing king
+        vectors = ((-1, 0), (1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1))
+        if self.white_turn:
+            i = len(current_moves) - 1
+            while i >= 0:
+                move = current_moves[i]
+                if move.piece_moved != "wK":
+                    i -= 1
+                    continue
+                else:
+                    end_pos = (move.end_row, move.end_col)
+                    for vect in vectors:
+                        adj_pos = (end_pos[0] + vect[0], end_pos[1] + vect[1])
+                        if 0 <= adj_pos[0] <= 7 and 0 <= adj_pos[1] <= 7:
+                            if self.board[adj_pos[0], adj_pos[1]] == "bK":
+                                z = current_moves.pop[i]
+                i -= 1
+        else:
+            i = len(current_moves) - 1
+            while i >= 0:
+                move = current_moves[i]
+                if move.piece_moved != "bK":
+                    i -= 1
+                    continue
+                else:
+                    end_pos = (move.end_row, move.end_col)
+                    for vect in vectors:
+                        adj_pos = (end_pos[0] + vect[0], end_pos[1] + vect[1])
+                        if 0 <= adj_pos[0] <= 7 and 0 <= adj_pos[1] <= 7:
+                            if self.board[adj_pos[0], adj_pos[1]] == "wK":
+                                z = current_moves.pop[i]        
+                i -= 1
 
         #Add Castling
         if self.white_ks_castleability:
