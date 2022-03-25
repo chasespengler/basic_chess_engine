@@ -38,7 +38,11 @@ class game_board():
     #Basic move function (will not work for castling, en passant, or pawn promotion)
     def make_move(self, move):
         self.board[move.start_row][move.start_col] = "--"
-        self.board[move.end_row][move.end_col] = move.piece_moved
+        #Pawn Promotion
+        if move.pawn_promotion:
+            self.board[move.end_row][move.end_col] = move.piece_moved[0] + move.promoted_piece
+        else:
+            self.board[move.end_row][move.end_col] = move.piece_moved
         self.move_log.append(move)
         self.white_turn = not self.white_turn
         self.black_turn = not self.black_turn
@@ -48,6 +52,7 @@ class game_board():
         self.white_pins = []
         self.white_in_check = False
         self.black_in_check = False
+
         #Adjusting ability to castle
         #Need to adjust from undo move
         if self.white_ks_castleability or self.white_qs_castleability:
@@ -72,6 +77,7 @@ class game_board():
         elif move.piece_moved == "bK":
             self.black_king_loc = (move.end_row, move.end_col)
 
+
         
 
     def undo_move(self):
@@ -79,6 +85,10 @@ class game_board():
             last_move = self.move_log.pop()
             self.board[last_move.start_row][last_move.start_col] = last_move.piece_moved
             self.board[last_move.end_row][last_move.end_col] = last_move.piece_captured
+
+            #Pawn promotion
+            if last_move.pawn_promotion:
+                self.board[last_move.start_row][last_move.start_col] = "wP" if self.black_turn else "bP"
             self.white_turn = not self.white_turn
             self.black_turn = not self.black_turn
             #Updating king location
@@ -91,30 +101,34 @@ class game_board():
             self.white_checks = []
             self.white_pins = []
 
+
+
     #Adds possible moves for the pawn at passed location to moves list
     def pawn_moves(self, r, c, moves):
         if self.board[r][c][0] == "w":
             if self.board[r-1][c] == "--":
                 moves.append(move((r, c), (r-1, c), self.board))
-                if r == 6 and self.board[r-2][c]:
+                if r == 6 and self.board[r-2][c] and self.board[r-2][c] == "--":
                     moves.append(move((r, c), (r-2, c), self.board))
             #Ensuring diagonal move is within space of board
-            if (c + 1) < 8 and (c - 1) >= 0:
-                #Ensuring that there is a piece diagonal to capture and that it is a black piece
+            if (c + 1) < 8:
                 if self.board[r-1][c+1][0] == "b":
+                #Ensuring that there is a piece diagonal to capture and that it is a black piece
                     moves.append(move((r, c), (r-1, c+1), self.board))
+            if (c - 1) >= 0:
                 if self.board[r-1][c-1][0] == "b":
                     moves.append(move((r, c), (r-1, c-1), self.board))
         elif self.board[r][c][0] == "b":
             if self.board[r+1][c] == "--":
                 moves.append(move((r, c), (r+1, c), self.board))
-                if r == 1 and self.board[r+2][c]:
+                if r == 1 and self.board[r+2][c] and self.board[r+2][c] == "--":
                     moves.append(move((r, c), (r+2, c), self.board))
             #Ensuring diagonal move is within space of board
-            if (c + 1) < 8 and (c - 1) >= 0:
+            if (c + 1) < 8:
                 #Ensuring that there is a piece diagonal to capture and that it is a white piece
                 if self.board[r+1][c+1][0] == "w":
                     moves.append(move((r, c), (r+1, c+1), self.board))
+            if (c - 1) >= 0:
                 if self.board[r+1][c-1][0] == "w":
                     moves.append(move((r, c), (r+1, c-1), self.board))      
 
@@ -385,9 +399,7 @@ class game_board():
                     elif self.white_turn:
                         #Checking for horizontal and vertical attacking pieces
                         if r == end_pos[0] or c == end_pos[1]:
-                            if occupant != "bR" or occupant != "bQ":
-                                break
-                            else:
+                            if occupant == "bR" or occupant == "bQ":
                                 if first_piece:
                                     self.white_checks.append(end_pos)
                                     self.white_in_check = True
@@ -395,6 +407,8 @@ class game_board():
                                 else:
                                     self.white_pins.append((pin_pos, vect))
                                     break
+                            else:
+                                break
                         #Checking for attacking pawns
                         elif i == 1 and occupant == "bP" and r == end_pos[0] + 1:
                             if c - 1 == end_pos[1] or c + 1 == end_pos[1]:
@@ -403,9 +417,7 @@ class game_board():
                                 break
                         #Diagonal attacking pieces
                         else:
-                            if occupant != "bB" or occupant != "bQ":
-                                break
-                            else:
+                            if occupant == "bB" or occupant == "bQ":
                                 if first_piece:
                                     self.white_checks.append(end_pos)
                                     self.white_in_check = True
@@ -413,13 +425,14 @@ class game_board():
                                 else:
                                     self.white_pins.append((pin_pos, vect))
                                     break
+                            else:
+                                break
+
                     #Black's turn
                     else:
                         #Horizontals and verticals
                         if r == end_pos[0] or c == end_pos[1]:
-                            if occupant != "wR" or occupant != "wQ":
-                                break
-                            else:
+                            if occupant == "wR" or occupant == "wQ":
                                 if first_piece:
                                     self.black_checks.append(end_pos)
                                     self.black_in_check = True
@@ -427,6 +440,8 @@ class game_board():
                                 else:
                                     self.black_pins.append((pin_pos, vect))
                                     break
+                            else:
+                                break
                         #Attacking pawns
                         elif i == 1 and occupant == "wP" and r == end_pos[0] - 1:
                             if c - 1 == end_pos[1] or c + 1 == end_pos[1]:
@@ -435,9 +450,7 @@ class game_board():
                                 break
                         #Diagonals
                         else:
-                            if occupant != "wB" or occupant != "wQ":
-                                break
-                            else:
+                            if occupant == "wB" or occupant == "wQ":
                                 if first_piece:
                                     self.black_checks.append(end_pos)
                                     self.black_in_check = True
@@ -445,6 +458,8 @@ class game_board():
                                 else:
                                     self.black_pins.append((pin_pos, vect))
                                     break
+                            else:
+                                break
         
         #Knight checks
         vectors = ((2, -1), (2, 1), (-2, 1), (-2, -1), (-1, 2), (-1, -2), (1, 2), (1, -2))
@@ -505,13 +520,16 @@ class game_board():
 
         return False
             
-
-
     #Takes all possible moves and then checks to ensure that any that result
     #in the player being in check are removed
     def valid_moves(self):
         self.check_for_checks()
-        current_moves = self.possible_moves()   
+        print("White check: ", self.white_in_check, " Black check: ", self.black_in_check)
+        print("White checks: ", self.white_checks, " Black checks: ", self.black_checks)
+        print("White pins: ", self.white_pins, " Black pins: ", self.black_pins)
+        print("White king: ", self. white_king_loc, " Black king: ", self.black_king_loc)
+        current_moves = self.possible_moves()
+        self.help_debug(current_moves)
         if self.white_in_check:
             #Ensure that all moves resulting in white still being in check are removed
             i = len(current_moves) - 1
@@ -556,9 +574,13 @@ class game_board():
                     move_vect_y = 0 if current_moves[i].end_col - current_moves[i].start_col == 0\
                         else (current_moves[i].end_col - current_moves[i].start_col)/np.abs(current_moves[i].end_col - current_moves[i].start_col)
                     if pin[0][0] == current_moves[i].start_row and pin[0][1] == current_moves[i].start_col:
-                        if pin[1][0] != move_vect_x and pin[1][1] != move_vect_y:
-                            z = current_moves.pop(i)
-                        elif pin[1][0] != -1 * move_vect_x and pin[1][1] != -1 * move_vect_y:
+                        if pin[1][0] == move_vect_x and pin[1][1] == move_vect_y:
+                            i -= 1
+                            continue
+                        elif pin[1][0] == -1 * move_vect_x and pin[1][1] == -1 * move_vect_y:
+                            i -= 1
+                            continue
+                        else:
                             z = current_moves.pop(i)
                     i -= 1
 
@@ -572,9 +594,13 @@ class game_board():
                     move_vect_y = 0 if current_moves[i].end_col - current_moves[i].start_col == 0\
                         else (current_moves[i].end_col - current_moves[i].start_col)/np.abs(current_moves[i].end_col - current_moves[i].start_col)
                     if pin[0][0] == current_moves[i].start_row and pin[0][1] == current_moves[i].start_col:
-                        if pin[1][0] != move_vect_x and pin[1][1] != move_vect_y:
-                            z = current_moves.pop(i)
-                        elif pin[1][0] != (-1 * move_vect_x) and pin[1][1] != (-1 * move_vect_y):
+                        if pin[1][0] == move_vect_x and pin[1][1] == move_vect_y:
+                            i -= 1
+                            continue
+                        elif pin[1][0] == (-1 * move_vect_x) and pin[1][1] == (-1 * move_vect_y):
+                            i -= 1
+                            continue
+                        else:
                             z = current_moves.pop(i)
                     i -= 1
 
@@ -584,11 +610,13 @@ class game_board():
             i = len(current_moves) - 1
             while i >= 0:
                 move = current_moves[i]
+                end_pos = (move.end_row, move.end_col)
                 if move.piece_moved != "wK":
                     i -= 1
                     continue
+                elif self.under_attack(end_pos[0], end_pos[1]):
+                    z = current_moves.pop(i)
                 else:
-                    end_pos = (move.end_row, move.end_col)
                     for vect in vectors:
                         adj_pos = (end_pos[0] + vect[0], end_pos[1] + vect[1])
                         if 0 <= adj_pos[0] <= 7 and 0 <= adj_pos[1] <= 7:
@@ -599,9 +627,12 @@ class game_board():
             i = len(current_moves) - 1
             while i >= 0:
                 move = current_moves[i]
+                end_pos = (move.end_row, move.end_col)
                 if move.piece_moved != "bK":
                     i -= 1
                     continue
+                elif self.under_attack(end_pos[0], end_pos[1]):
+                    z = current_moves.pop(i)
                 else:
                     end_pos = (move.end_row, move.end_col)
                     for vect in vectors:
@@ -611,9 +642,8 @@ class game_board():
                                 z = current_moves.pop[i]        
                 i -= 1
 
+        self.help_debug(current_moves)
         #Add Castling
-        if self.white_ks_castleability:
-            pass
 
         #Add en passant
 
@@ -645,14 +675,13 @@ class game_board():
                 elif self.black_turn and self.board[r][c][0] == "b":
                     piece = self.board[r][c][1]
                     self.move_function[piece](r, c, moves)
-        #unfucking code
+        return moves
+
+    def help_debug(self, moves):
         all_moves = []
         for val in moves:
             all_moves.append(("Piece: ", val.piece_moved, " Start: ", val.start_row, val.start_col, " End: ", val.end_row, val.end_col))
         print(all_moves)
-        return moves
-
-
                     
 
 
@@ -671,6 +700,39 @@ class move():
         self.piece_moved = board[self.start_row][self.start_col]
         self.piece_captured = board[self.end_row][self.end_col]
         self.move_id = self.start_row * 1000 + self.start_col * 100 + self.end_row * 10 + self.end_col
+        self.pawn_promotion = False
+        self.w_ks_c = False
+        self.w_qs_c = False
+        self.b_ks_c = False
+        self.b_qs_c = False
+
+        #Pawn promotion logic
+        if self.piece_moved == "wP" and self.end_row == 0:
+            self.pawn_promotion = True
+            self.promoted_piece = "Q"
+        elif self.piece_moved == "bP" and self.end_row == 7:
+            self.pawn_promotion = True
+            self.promoted_piece = "Q"
+
+        '''
+        #Castling logic
+        if game_board.white_ks_castleability or game_board.white_qs_castleability:
+            if self.piece_moved == "wK":
+                self.w_ks_c = True
+                self.w_qs_c = True
+        if game_board.white_ks_castleability and self.start_row == 7 and self.start_col == 0:
+            self.w_ks_c = True
+        if game_board.white_qs_castleability and self.start_row == 7 and self.start_col == 7:
+            self.w_qs_c = True
+        if game_board.black_ks_castleability or game_board.black_qs_castleability:
+            if self.piece_moved == "bK":
+                self.b_ks_c = True
+                self.b_qs_c = True
+        if game_board.black_ks_castleability and self.start_row == 0 and self.start_col == 0:
+            self.b_ks_c = True
+        if game_board.black_qs_castleability and self.start_row == 0 and self.start_col == 7:
+            self.b_qs_c = True
+        '''
 
     #To enable comparison between objects (like checking for valid moves)
     def __eq__(self, other):

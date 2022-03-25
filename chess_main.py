@@ -54,18 +54,16 @@ def main():
                 if len(player_clicks) == 2:
                     #determine how the board plays the move as well as retain the move log
                     move = chess_engine.move(player_clicks[0], player_clicks[1], gs.board)
-                    print(move.convert_notation())
-                    print(gs.move_log)
-                    print(gs.black_turn)
                     #checking validity
-                    if move in current_valid_moves:
-                        gs.make_move(move)
-                        move_made = True
-                        selected_sq = ()
-                        player_clicks = []
+                    for i in range(len(current_valid_moves)):
+                        if move == current_valid_moves[i]:
+                            gs.make_move(current_valid_moves[i])
+                            move_made = True
+                            selected_sq = ()
+                            player_clicks = []
                     #added to minimize number of clicks when trying to make move
                     #player can now change selected piece
-                    else:
+                    if not move_made:
                         player_clicks = [selected_sq]
             #Key Handlers
             elif e.type == p.KEYDOWN:
