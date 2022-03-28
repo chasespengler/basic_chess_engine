@@ -43,6 +43,9 @@ class game_board():
             self.board[move.end_row][move.end_col] = move.piece_moved[0] + move.promoted_piece
         else:
             self.board[move.end_row][move.end_col] = move.piece_moved
+        #En passant
+        if move.ep_capt:
+            self.board[self.move_log[-1].end_row][self.move_log[-1].end_col] = "--"
         self.move_log.append(move)
         self.white_turn = not self.white_turn
         self.black_turn = not self.black_turn
@@ -91,6 +94,14 @@ class game_board():
                 self.board[last_move.start_row][last_move.start_col] = "wP" if self.black_turn else "bP"
             self.white_turn = not self.white_turn
             self.black_turn = not self.black_turn
+            #En passant
+            if last_move.ep_capt:
+                second_to_last = self.move_log[-1]
+                capt_piece = second_to_last.piece_moved
+                print("EN PASS")
+                print(capt_piece)
+                loc = (second_to_last.end_row, second_to_last.end_col)
+                self.board[loc[0]][loc[1]] = capt_piece
             #Updating king location
             if last_move.piece_moved == "wK":
                 self.white_king_loc = (last_move.start_row, last_move.start_col)
@@ -128,7 +139,17 @@ class game_board():
                     moves.append(move((r, c), (r+1, c+1), self.board))
             if (c - 1) >= 0:
                 if self.board[r+1][c-1][0] == "w":
-                    moves.append(move((r, c), (r+1, c-1), self.board))      
+                    moves.append(move((r, c), (r+1, c-1), self.board))
+
+        #Adding en passant moves
+        if len(self.move_log) > 0:
+            last_move = self.move_log[-1]
+            if last_move.piece_moved[1] == "P" and last_move.end_row == r and last_move.ep:
+                if last_move.end_col == c + 1 or last_move.end_col == c - 1:
+                    if self.white_turn:
+                        moves.append(move((r, c), (r-1, last_move.end_col), self.board))
+                    else:
+                        moves.append(move((r, c), (r+1, last_move.end_col), self.board)) 
 
     #Adds possible moves for the rook at passed location to moves list
     def rook_moves(self, r, c, moves):
@@ -561,6 +582,10 @@ class move():
         self.w_qs_c = False
         self.b_ks_c = False
         self.b_qs_c = False
+        #En passant flag
+        self.ep = False
+        #En passant capturing move flag
+        self.ep_capt = False
 
         #Pawn promotion logic
         if self.piece_moved == "wP" and self.end_row == 0:
@@ -569,6 +594,12 @@ class move():
         elif self.piece_moved == "bP" and self.end_row == 7:
             self.pawn_promotion = True
             self.promoted_piece = "Q"
+
+        #En passant logic
+        if self.piece_moved[1] == "P" and np.abs(self.end_row - self.start_row) == 2:
+            self.ep = True
+        elif self.piece_moved[1] =="P" and self.piece_captured == "--" and self.start_col != self.end_col:
+            self.ep_capt = True
 
         '''
         #Castling logic
