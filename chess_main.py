@@ -1,4 +1,5 @@
 #Responsible for user input and displaying current game board object
+from re import S
 from numpy import squeeze
 import pygame as p
 import chess_engine
@@ -18,6 +19,8 @@ def load_imgs():
         images[piece] = p.transform.scale(p.image.load("images/" + piece + ".png"), (0.98 * SQ_size, 0.98 * SQ_size))
 
 def main():
+    #Animation toggle, taken as user input (needs to be implemented)
+    animation = True
     screen = p.display.set_mode((WIDTH, HEIGHT))
     clock = p.time.Clock()
     screen.fill(p.Color("white"))
@@ -74,24 +77,24 @@ def main():
 
         #Regenerate current valid moves
         if move_made:
+            if animation:
+                animate(screen, gs.move_log[-1], gs.board, clock)
             current_valid_moves = gs.valid_moves()
             move_made = False
 
-        draw_game_board(screen, gs)
+        draw_game_board(screen, gs, current_valid_moves, selected_sq)
         clock.tick(max_fps)
         p.display.flip()
 
-    
-
-
 #Responsible for all graphics within a current game state.
-def draw_game_board(screen, gs):
+def draw_game_board(screen, gs, valid_moves, selected_sq):
     draw_squares(screen) #draws squares on board
-    #can add in piece highlighting or move suggestions through these later
+    highlight_sq(screen, gs, valid_moves, selected_sq)
     draw_pieces(screen, gs.board) #draws pieces on top of squares
 
 #Draws squares on the board
 def draw_squares(screen):
+    global colors
     colors = [p.Color("white"), p.Color("gray")]
     for row in range(dims):
         for col in range(dims):
@@ -107,6 +110,64 @@ def draw_pieces(screen, board):
             piece = board[row, col]
             if piece != "--":
                 screen.blit(images[piece], p.Rect(col*SQ_size, row*SQ_size, SQ_size, SQ_size))
+
+#Highlights user's selected piece and its moves
+def highlight_sq(screen, gs, valid_moves, selected_sq):
+    #Shading last move
+    if gs.move_log:
+        s = p.Surface((SQ_size, SQ_size))
+        s.set_alpha(65)
+        s.fill(p.Color('blue'))
+        e = p.Surface((SQ_size, SQ_size))
+        e.set_alpha(65)
+        e.fill(p.Color('red'))
+        last_move = gs.move_log[-1]
+        screen.blit(s, (last_move.start_col * SQ_size, last_move.start_row * SQ_size))
+        screen.blit(e, (last_move.end_col * SQ_size, last_move.end_row * SQ_size))
+    
+    if selected_sq != ():
+        r, c = selected_sq
+        if gs.board[r][c][0] == ("w" if gs.white_turn else "b"):
+            #Creating a "highlight" square
+            s = p.Surface((SQ_size, SQ_size))
+            #Setting transparency (0-255)
+            s.set_alpha(85)
+            #Setting color
+            s.fill(p.Color('green'))
+            #Placing square
+            screen.blit(s, (c * SQ_size, r * SQ_size))
+            #Highlighting moves
+            m = s
+            m.fill(p.Color('gold'))
+            for move in valid_moves:
+                if move.start_row == r and move.start_col == c:
+                    if move.is_castle:
+                        m.fill(p.Color('purple'))
+                    screen.blit(m, (move.end_col * SQ_size, move.end_row * SQ_size))
+
+#Move animation
+#Could make more efficient by redrawing only the squares covered by the move rather than whole board
+def animate(screen, move, board, clock):
+    global colors
+    delta_r = move.end_row - move.start_row
+    delta_c = move.end_col - move.start_col
+    fpsquare = 10
+    total_frames = (abs(delta_c) + abs(delta_r)) * fpsquare
+    for frame in range(total_frames + 1):
+        r, c = (move.start_row + delta_r * frame / total_frames, move.start_col + delta_c * frame / total_frames)
+        draw_squares(screen)
+        draw_pieces(screen, board)
+        #Piece drawn on end square in draw pieces, needs to be erased
+        color = colors[(move.end_row + move.end_col) % 2]
+        end_square = p.Rect(move.end_col * SQ_size, move.end_row * SQ_size, SQ_size, SQ_size)
+        p.draw.rect(screen, color, end_square)
+        #Replacing any captured piece
+        if move.piece_captured != "--":
+            screen.blit(images[move.piece_captured], end_square)
+        #Drawing moving piece
+        screen.blit(images[move.piece_moved], p.Rect(c * SQ_size, r * SQ_size, SQ_size, SQ_size))
+        p.display.flip()
+        clock.tick(60)
 
 if __name__ == "__main__":
     main()
