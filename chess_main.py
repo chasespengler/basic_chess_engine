@@ -19,8 +19,12 @@ def load_imgs():
         images[piece] = p.transform.scale(p.image.load("images/" + piece + ".png"), (0.98 * SQ_size, 0.98 * SQ_size))
 
 def main():
-    #Animation toggle, taken as user input (needs to be implemented)
-    animation = True
+    #Animation toggle, Undo toggle taken as user input (needs to be implemented)
+    enable_animation = True
+    enable_undo = True
+    playing = True
+    reset = False
+
     screen = p.display.set_mode((WIDTH, HEIGHT))
     clock = p.time.Clock()
     screen.fill(p.Color("white"))
@@ -43,53 +47,82 @@ def main():
             elif e.type == p.MOUSEBUTTONDOWN:
                 # (x, y) location of mouse
                 location = p.mouse.get_pos()
-                #since board is entire screen, there is no need to reset based off origin
-                col = location[0] // SQ_size
-                row = location[1] // SQ_size
-                #check to see if piece is moved to a different square
-                if selected_sq == (row, col):
-                    selected_sq = ()
-                    player_clicks = []
-                else:
-                    selected_sq = (row, col)
-                    player_clicks.append(selected_sq)
-                #check to see if the click was the second click indicating piece has been moved
-                if len(player_clicks) == 2:
-                    #determine how the board plays the move as well as retain the move log
-                    move = chess_engine.move(player_clicks[0], player_clicks[1], gs.board)
-                    #checking validity
-                    for i in range(len(current_valid_moves)):
-                        if move == current_valid_moves[i]:
-                            gs.make_move(current_valid_moves[i])
-                            move_made = True
-                            selected_sq = ()
-                            player_clicks = []
-                    #added to minimize number of clicks when trying to make move
-                    #player can now change selected piece
-                    if not move_made:
-                        player_clicks = [selected_sq]
+
+                if playing:
+                    #since board is entire screen, there is no need to reset based off origin
+                    col = location[0] // SQ_size
+                    row = location[1] // SQ_size
+                    #check to see if piece is moved to a different square
+                    if selected_sq == (row, col):
+                        selected_sq = ()
+                        player_clicks = []
+                    else:
+                        selected_sq = (row, col)
+                        player_clicks.append(selected_sq)
+                    #check to see if the click was the second click indicating piece has been moved
+                    if len(player_clicks) == 2:
+                        #determine how the board plays the move as well as retain the move log
+                        move = chess_engine.move(player_clicks[0], player_clicks[1], gs.board)
+                        #checking validity
+                        for i in range(len(current_valid_moves)):
+                            if move == current_valid_moves[i]:
+                                gs.make_move(current_valid_moves[i])
+                                undo = False
+                                move_made = True
+                                selected_sq = ()
+                                player_clicks = []
+                        #added to minimize number of clicks when trying to make move
+                        #player can now change selected piece without needing to deselect current piece
+                        if not move_made:
+                            player_clicks = [selected_sq]
             #Key Handlers
             elif e.type == p.KEYDOWN:
                 #Undo button when z is pressed
-                if e.key == p.K_z:
+                if e.key == p.K_z and enable_undo:
                     gs.undo_move()
+                    undo = True
                     move_made = True
+                #Resets board when r is pressed
+                elif e.key == p.K_r:
+                    gs = chess_engine.game_board()
+                    current_valid_moves = gs.valid_moves()
+                    selected_sq = ()
+                    player_clicks = []
+                    move_made = False
+                    reset = True
 
-        #Regenerate current valid moves
-        if move_made:
-            if animation:
-                animate(screen, gs.move_log[-1], gs.board, clock)
-            current_valid_moves = gs.valid_moves()
-            move_made = False
+            #Regenerate current valid moves and animate
+            if move_made:
+                if enable_animation and not undo:
+                    animate(screen, gs.move_log[-1], gs.board, clock)
+                current_valid_moves = gs.valid_moves()
+                move_made = False
 
-        draw_game_board(screen, gs, current_valid_moves, selected_sq)
-        clock.tick(max_fps)
-        p.display.flip()
+            draw_game_board(screen, gs, current_valid_moves, selected_sq)
+            #Checking for stalemate and checkmate
+            if gs.stalemate:
+                draw_text(screen, "Stalemate", 0)
+                playing = False
+            elif gs.white_checkmate:
+                draw_text(screen, "Black wins by checkmate", 0)
+                playing = False
+            elif gs.black_checkmate:
+                draw_text(screen, "White wins by checkmate", 0)
+
+            '''
+            #Posts "RESET" to the screen and fades out
+            if reset:
+                reset = False
+                for i in range(255, 0, -5):
+                    p.event.post(draw_text(screen, "RESET", i))
+            '''
+            clock.tick(max_fps)
+            p.display.flip()
 
 #Responsible for all graphics within a current game state.
 def draw_game_board(screen, gs, valid_moves, selected_sq):
     draw_squares(screen) #draws squares on board
-    highlight_sq(screen, gs, valid_moves, selected_sq)
+    highlight_sq(screen, gs, valid_moves, selected_sq) #highlights pieces and their moves as well as last move
     draw_pieces(screen, gs.board) #draws pieces on top of squares
 
 #Draws squares on the board
@@ -100,6 +133,15 @@ def draw_squares(screen):
         for col in range(dims):
             color = colors[((row + col) % 2)]
             p.draw.rect(screen, color, p.Rect(col*SQ_size, row*SQ_size, SQ_size, SQ_size))
+
+#Draws text on screen
+def draw_text(screen, text, opacity):
+    font = p.font.SysFont("Helvitca", 65, True, False)
+    text_object = font.render(text, opacity, p.Color("Red"))
+    text_location = p.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH / 2 - text_object.get_width() / 2, HEIGHT / 2 - text_object.get_height() / 2)
+    screen.blit(text_object, text_location)
+    text_object = font.render(text, opacity, p.Color("Blue"))
+    screen.blit(text_object, text_location.move(2, 2))
 
 #Draws pieces on top of the squares on the board using current gs.board variable
 #could move this to draw_squares function to do within a single nested loop but
@@ -161,7 +203,7 @@ def animate(screen, move, board, clock):
         color = colors[(move.end_row + move.end_col) % 2]
         end_square = p.Rect(move.end_col * SQ_size, move.end_row * SQ_size, SQ_size, SQ_size)
         p.draw.rect(screen, color, end_square)
-        #Replacing any captured piece
+        #Replacing any captured piece that was removed in the move
         if move.piece_captured != "--":
             screen.blit(images[move.piece_captured], end_square)
         #Drawing moving piece

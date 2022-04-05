@@ -39,6 +39,10 @@ class game_board():
         self.black_pins = []
         #List of all moves (stored as a move object, see below)
         self.move_log = []
+        #Checkmate and stalemate variable
+        self.stalemate = False
+        self.white_checkmate = False
+        self.black_checkmate = False
 
         #Maps letters of piece type to a function that calls the piece's moves
         self.move_function = {"P": self.pawn_moves, "R": self.rook_moves, "N": self.knight_moves, "B": self.bishop_moves, "Q": self.queen_moves, "K": self.king_moves}
@@ -583,15 +587,14 @@ class game_board():
 
         #Pass this logic to main to end game
         #Checking for stalemate
-        if len(current_moves) == 0 and (not self.white_in_check or not self.black_in_check):
-            print("stalemate")
+        if not current_moves and ((self.white_turn and not self.white_in_check) or (self.black_turn and not self.black_in_check)):
+            self.stalemate = True
         #Checkmate
-        elif len(current_moves) == 0 and (self.white_in_check or self.black_in_check):
-            print("checkmate")
+        elif not current_moves and (self.white_in_check or self.black_in_check):
             if self.white_in_check:
-                print("Black wins")
+                self.white_checkmate = True
             else:
-                print("White wins")
+                self.black_checkmate = True
 
         return current_moves
 
