@@ -23,14 +23,23 @@ def main():
     #Animation toggle, Undo toggle taken as user input (needs to be implemented)
     enable_animation = True
     enable_undo = True
-    #Used to determine when game is over
-    playing = True
-    reset = False
+
+    #Loading screen flag
+    loading_screen = True
 
     screen = p.display.set_mode((WIDTH, HEIGHT))
     clock = p.time.Clock()
     screen.fill(p.Color("white"))
+    p.display.set_caption("Chase's Chess")
+    #If a human is playing white, then this is true, else False
+    player_one = True
+    #Same for black
+    player_two = False
 
+    play_game(screen, player_one, player_two, clock, enable_undo, enable_animation)
+
+#Main game function
+def play_game(screen, player_one, player_two, clock, enable_undo, enable_animation, bot_level = 0):
     #Initialize gamestate
     gs = chess_engine.game_board()
 
@@ -42,10 +51,9 @@ def main():
     selected_sq = () #keeps track of the last click
     player_clicks = [] #keeps track of player clicks (two tuples: [(6, 4), (4, 4)])
 
-    #If a human is playing white, then this is true, else False
-    player_one = True
-    #Same for black
-    player_two = False
+    #Used to determine when game is over
+    playing = True
+    reset = False
 
     while running:
         for e in p.event.get():
