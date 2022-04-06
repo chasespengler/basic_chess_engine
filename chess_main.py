@@ -38,6 +38,10 @@ def main():
 
     play_game(screen, player_one, player_two, clock, enable_undo, enable_animation)
 
+#Loading screen function
+def title_screen(screen):
+    screen.blit()
+
 #Main game function
 def play_game(screen, player_one, player_two, clock, enable_undo, enable_animation, bot_level = 0):
     #Initialize gamestate
