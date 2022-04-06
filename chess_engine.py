@@ -464,12 +464,7 @@ class game_board():
     #in the player being in check are removed
     def valid_moves(self):
         self.check_for_checks()
-        print("White check: ", self.white_in_check, " Black check: ", self.black_in_check)
-        print("White checks: ", self.white_checks, " Black checks: ", self.black_checks)
-        print("White pins: ", self.white_pins, " Black pins: ", self.black_pins)
-        print("White king: ", self. white_king_loc, " Black king: ", self.black_king_loc)
         current_moves = self.possible_moves()
-        self.help_debug(current_moves)
         if self.white_in_check:
             #Ensure that all moves resulting in white still being in check are removed
             i = len(current_moves) - 1
@@ -582,8 +577,6 @@ class game_board():
                             if self.board[adj_pos[0], adj_pos[1]] == "wK":
                                 z = current_moves.pop[i]        
                 i -= 1
-
-        self.help_debug(current_moves)
 
         #Pass this logic to main to end game
         #Checking for stalemate

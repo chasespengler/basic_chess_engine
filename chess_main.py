@@ -3,6 +3,7 @@ from re import S
 from numpy import squeeze
 import pygame as p
 import chess_engine
+import chess_ai
 
 p.init()
 
@@ -22,6 +23,7 @@ def main():
     #Animation toggle, Undo toggle taken as user input (needs to be implemented)
     enable_animation = True
     enable_undo = True
+    #Used to determine when game is over
     playing = True
     reset = False
 
@@ -39,8 +41,15 @@ def main():
     running = True
     selected_sq = () #keeps track of the last click
     player_clicks = [] #keeps track of player clicks (two tuples: [(6, 4), (4, 4)])
+
+    #If a human is playing white, then this is true, else False
+    player_one = True
+    #Same for black
+    player_two = False
+
     while running:
         for e in p.event.get():
+            humans_turn = (gs.white_turn and player_one) or (gs.black_turn and player_two)
             if e.type == p.QUIT:
                 running = False
             #Mouse Handler
@@ -48,7 +57,7 @@ def main():
                 # (x, y) location of mouse
                 location = p.mouse.get_pos()
 
-                if playing:
+                if playing and humans_turn:
                     #since board is entire screen, there is no need to reset based off origin
                     col = location[0] // SQ_size
                     row = location[1] // SQ_size
@@ -75,6 +84,7 @@ def main():
                         #player can now change selected piece without needing to deselect current piece
                         if not move_made:
                             player_clicks = [selected_sq]
+
             #Key Handlers
             elif e.type == p.KEYDOWN:
                 #Undo button when z is pressed
@@ -91,6 +101,13 @@ def main():
                     move_made = False
                     reset = True
 
+            #AI Moves
+            if playing and not humans_turn:
+                #if (gs.white_turn and not player_one) or (gs.black_turn and not player_two):
+                bot_move = chess_ai.random_move(current_valid_moves)
+                gs.make_move(bot_move)
+                move_made = True
+
             #Regenerate current valid moves and animate
             if move_made:
                 if enable_animation and not undo:
@@ -99,6 +116,7 @@ def main():
                 move_made = False
 
             draw_game_board(screen, gs, current_valid_moves, selected_sq)
+
             #Checking for stalemate and checkmate
             if gs.stalemate:
                 draw_text(screen, "Stalemate", 0)
@@ -108,6 +126,7 @@ def main():
                 playing = False
             elif gs.black_checkmate:
                 draw_text(screen, "White wins by checkmate", 0)
+                playing = False
 
             '''
             #Posts "RESET" to the screen and fades out
@@ -136,7 +155,7 @@ def draw_squares(screen):
 
 #Draws text on screen
 def draw_text(screen, text, opacity):
-    font = p.font.SysFont("Helvitca", 65, True, False)
+    font = p.font.SysFont("Helvitca", 45, True, False)
     text_object = font.render(text, opacity, p.Color("Red"))
     text_location = p.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH / 2 - text_object.get_width() / 2, HEIGHT / 2 - text_object.get_height() / 2)
     screen.blit(text_object, text_location)
@@ -194,7 +213,7 @@ def animate(screen, move, board, clock):
     delta_r = move.end_row - move.start_row
     delta_c = move.end_col - move.start_col
     fpsquare = 10
-    total_frames = (abs(delta_c) + abs(delta_r)) * fpsquare
+    total_frames = int(((abs(delta_c) ** 2 + abs(delta_r) ** 2) ** 0.5) * fpsquare // 1)
     for frame in range(total_frames + 1):
         r, c = (move.start_row + delta_r * frame / total_frames, move.start_col + delta_c * frame / total_frames)
         draw_squares(screen)
@@ -208,9 +227,9 @@ def animate(screen, move, board, clock):
             screen.blit(images[move.piece_captured], end_square)
         #Drawing moving piece
         screen.blit(images[move.piece_moved], p.Rect(c * SQ_size, r * SQ_size, SQ_size, SQ_size))
-        p.display.flip()
         clock.tick(60)
-
+        p.display.flip()
+        
 if __name__ == "__main__":
     main()
 
