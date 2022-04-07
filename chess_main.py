@@ -1,5 +1,7 @@
 #Responsible for user input and displaying current game board object
+from operator import invert
 from re import S
+from matplotlib.pyplot import text
 from numpy import squeeze
 import pygame as p
 import chess_engine
@@ -29,22 +31,55 @@ def main():
 
     screen = p.display.set_mode((WIDTH, HEIGHT))
     clock = p.time.Clock()
-    screen.fill(p.Color("white"))
     p.display.set_caption("Chase's Chess")
     #If a human is playing white, then this is true, else False
     player_one = True
     #Same for black
     player_two = False
 
-    play_game(screen, player_one, player_two, clock, enable_undo, enable_animation)
+    loading_screen = title_screen(screen, clock)
+
+    if not loading_screen:
+        play_game(screen, player_one, player_two, clock, enable_undo, enable_animation)
 
 #Loading screen function
-def title_screen(screen):
-    screen.blit()
+def title_screen(screen, clock):
+    #p.draw.rect(screen, color, p.Rect(col*SQ_size, row*SQ_size, SQ_size, SQ_size))
+    running = True
+    w = WIDTH // 2 + 10
+    h = HEIGHT // 2 + 10
+    x_loc = (WIDTH - w) // 2
+    x_end = x_loc + w
+    y_loc = (HEIGHT - h) // 2
+    y_end = y_loc + h
+    while running:
+        for e in p.event.get():
+            if e.type == p.QUIT:
+                running = False
+            #Mouse Handler
+            elif e.type == p.MOUSEBUTTONDOWN:
+                # (x, y) location of mouse
+                running = False
+                location = p.mouse.get_pos()
+
+            #Printing screen
+            draw_squares(screen)
+            p.draw.rect(screen, p.Color("black"), p.Rect(x_loc - 2, y_loc - 2, w, h), w, 25)
+            p.draw.rect(screen, p.Color("dark gray"), p.Rect(x_loc, y_loc, w, h), w, 25)
+            #Creating and printing buttons
+            play_as1 = button(screen, "Player 1", "Play as white", x_loc + 30, y_loc + 40, 100, 30, True, False)
+            play_as1.draw_button()
+            play_as2 = button(screen, "Player 2", "Play as black", x_end - 130, y_loc + 40, 100, 30, True, True)
+            play_as2.draw_button()
+            clock.tick(max_fps)
+            p.display.flip()
+
+    return True
 
 #Main game function
 def play_game(screen, player_one, player_two, clock, enable_undo, enable_animation, bot_level = 0):
     #Initialize gamestate
+    screen.fill(p.Color("white"))
     gs = chess_engine.game_board()
 
     #Finding valid moves
@@ -241,6 +276,59 @@ def animate(screen, move, board, clock):
         screen.blit(images[move.piece_moved], p.Rect(c * SQ_size, r * SQ_size, SQ_size, SQ_size))
         clock.tick(60)
         p.display.flip()
+
+#Creates buttons for title screen
+class button():
+    def __init__(self, screen, title, text, x, y, w, h, is_default, invert_colors):
+        self.text = text
+        self.title = title
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.id = x * 1000 + y * 100 + w * 10 + h
+        self.partners = []
+        self.is_default = is_default
+        self.screen = screen
+        self.invert_colors = invert_colors
+
+    #For comparison
+    def __eq__(self, other):
+        if isinstance(other, button):
+            return self.id == other.id
+
+    #Adds partner buttons for radio
+    def add_partner(self, button_id):
+        self.partners.append(button_id)
+
+    #Draws the button
+    def draw_button(self):
+        if self.invert_colors:
+            colors = (p.Color("black"), p.Color("white"))
+        else:
+            colors = (p.Color("white"), p.Color("black"))
+        size = 20
+        font = p.font.SysFont("Helvitca", size, True, False)
+        text_object = font.render(self.text, 0, colors[1])
+        #Adjusting sizing
+        while text_object.get_width() > self.w - 5:
+            size -= 1
+            font = p.font.SysFont("Helvitca", size, True, False)
+            text_object = font.render(self.text, 0, colors[1])
+        
+        title_object = font.render(self.title, 0, p.Color('black'))
+
+        center_x = self.x + text_object.get_width() // 2
+        center_y = self.y + text_object.get_height() // 2
+        text_location = p.Rect(self.x + 5, self.y + 5, self.w - 10, self.y - 10)
+        title_location = p.Rect(self.x + 5, self.y - 15, self.w - 10, self.y - 10)
+        p.draw.rect(self.screen, colors[1], p.Rect(self.x - 1, self.y - 1, self.w, self.h))
+        p.draw.rect(self.screen, colors[0], p.Rect(self.x, self.y, self.w, self.h))
+        self.screen.blit(text_object, text_location)
+        self.screen.blit(title_object, title_location)
+
+
+
         
 if __name__ == "__main__":
     main()
