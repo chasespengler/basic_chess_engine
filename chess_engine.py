@@ -139,10 +139,8 @@ class game_board():
             #Castling Ability
             if self.white_turn:
                 if last_move.qs_castle:
-                    print("QueenSIDE")
                     self.white_qs_castleability = True
                 if last_move.ks_castle:
-                    print("KingSIDE")
                     self.white_ks_castleability = True
             else:
                 if last_move.qs_castle:
@@ -538,7 +536,7 @@ class game_board():
                         else:
                             z = current_moves.pop(i)
                     i -= 1
-
+                    
         #Removing moves that result in the king being within range of the opposing king
         #Should move this logic into the king moves function
         vectors = ((-1, 0), (1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1))

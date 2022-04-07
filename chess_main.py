@@ -32,26 +32,49 @@ def main():
     screen = p.display.set_mode((WIDTH, HEIGHT))
     clock = p.time.Clock()
     p.display.set_caption("Chase's Chess")
-    #If a human is playing white, then this is true, else False
-    player_one = True
-    #Same for black
-    player_two = False
 
-    loading_screen = title_screen(screen, clock)
+    loading_screen, p1, p2 = title_screen(screen, clock)
+    player_one = True if p1 != "bot" else False
+    player_two = True if p2 != "bot" else False
 
     if not loading_screen:
         play_game(screen, player_one, player_two, clock, enable_undo, enable_animation)
 
 #Loading screen function
 def title_screen(screen, clock):
-    #p.draw.rect(screen, color, p.Rect(col*SQ_size, row*SQ_size, SQ_size, SQ_size))
     running = True
+    loading_screen = True
+    #width of title screen
     w = WIDTH // 2 + 10
+    #height of title screen
     h = HEIGHT // 2 + 10
+    #left side distance from left
     x_loc = (WIDTH - w) // 2
+    #right side distance from left
     x_end = x_loc + w
+    #top distance from top
     y_loc = (HEIGHT - h) // 2
+    #bottom distance from top
     y_end = y_loc + h
+    #Whether each player will be played by a human
+    player_1 = True
+    player_2 = True
+    #The color each player will be playing
+    color_1 = "white"
+    color_2 = "black"
+    #Printing screen
+    draw_squares(screen)
+    p.draw.rect(screen, p.Color("dark blue"), p.Rect(x_loc - 2, y_loc - 2, w, h), w, 25)
+    p.draw.rect(screen, p.Color("light blue"), p.Rect(x_loc, y_loc, w, h), w, 25)
+    #Creating and printing buttons
+    play_as1 = button(screen, "Player 1", "Play as white", x_loc + 30, y_loc + 40, 100, 30, True, False)
+    play_as1.draw_button()
+    play_as2 = button(screen, "Player 2", "Play as black", x_end - 130, y_loc + 40, 100, 30, True, True)
+    play_as2.draw_button()
+    start_button = button(screen, "", "START GAME", x_loc + 29, y_end - 65, w - 58, 40, True, False)
+    start_button.draw_button()
+
+
     while running:
         for e in p.event.get():
             if e.type == p.QUIT:
@@ -59,22 +82,38 @@ def title_screen(screen, clock):
             #Mouse Handler
             elif e.type == p.MOUSEBUTTONDOWN:
                 # (x, y) location of mouse
-                running = False
                 location = p.mouse.get_pos()
+                if play_as1.is_clicked(location):
+                    play_as1.change_button()
+                    play_as1.draw_button()
+                    play_as1.update_player()
+                #current_color = play_as1.
+                elif play_as2.is_clicked(location):
+                    play_as2.change_button()
+                    play_as2.draw_button()
+                    play_as2.update_player()
+                elif start_button.is_clicked(location):
+                    p1, p2, playable = check_players(play_as1.player, play_as2.player)
+                    if playable:
+                        loading_screen = False
+                        running = False
+                    else:
+                        start_button.title = "Select valid matchup"
+                        start_button.draw_button()
 
-            #Printing screen
-            draw_squares(screen)
-            p.draw.rect(screen, p.Color("black"), p.Rect(x_loc - 2, y_loc - 2, w, h), w, 25)
-            p.draw.rect(screen, p.Color("dark gray"), p.Rect(x_loc, y_loc, w, h), w, 25)
-            #Creating and printing buttons
-            play_as1 = button(screen, "Player 1", "Play as white", x_loc + 30, y_loc + 40, 100, 30, True, False)
-            play_as1.draw_button()
-            play_as2 = button(screen, "Player 2", "Play as black", x_end - 130, y_loc + 40, 100, 30, True, True)
-            play_as2.draw_button()
             clock.tick(max_fps)
             p.display.flip()
 
-    return True
+
+    return loading_screen, p1, p2
+
+#Checks for player assignments, returns player 1's color, player 2's color, and if the matchup is playable i.e. not white vs white or black vs black
+def check_players(p1, p2):
+    if p1 != p2 or p1 == "bot":
+        return p1, p2, True
+    else:
+        return p1, p2, False
+
 
 #Main game function
 def play_game(screen, player_one, player_two, clock, enable_undo, enable_animation, bot_level = 0):
@@ -154,6 +193,7 @@ def play_game(screen, player_one, player_two, clock, enable_undo, enable_animati
                 bot_move = chess_ai.random_move(current_valid_moves)
                 gs.make_move(bot_move)
                 move_made = True
+                undo = False
 
             #Regenerate current valid moves and animate
             if move_made:
@@ -291,6 +331,11 @@ class button():
         self.is_default = is_default
         self.screen = screen
         self.invert_colors = invert_colors
+        self.player = "black" if self.invert_colors else "white"
+        self.colors = [p.Color("black"), p.Color("white"), p.Color("dark gray")] if self.invert_colors else [p.Color("white"), p.Color("black"), p.Color("dark gray")]
+        self.background_color = self.colors[1]
+        self.current_color = self.colors[0]
+
 
     #For comparison
     def __eq__(self, other):
@@ -303,31 +348,56 @@ class button():
 
     #Draws the button
     def draw_button(self):
-        if self.invert_colors:
-            colors = (p.Color("black"), p.Color("white"))
-        else:
-            colors = (p.Color("white"), p.Color("black"))
-        size = 20
+        size = 60
         font = p.font.SysFont("Helvitca", size, True, False)
-        text_object = font.render(self.text, 0, colors[1])
+        text_object = font.render(self.text, 0, self.background_color)
         #Adjusting sizing
         while text_object.get_width() > self.w - 5:
             size -= 1
             font = p.font.SysFont("Helvitca", size, True, False)
-            text_object = font.render(self.text, 0, colors[1])
+            text_object = font.render(self.text, 0, self.background_color)
         
-        title_object = font.render(self.title, 0, p.Color('black'))
-
+        title_font = p.font.SysFont("Helvitca", 20, True, False)
+        title_object = title_font.render(self.title, 0, p.Color('black'))
         center_x = self.x + text_object.get_width() // 2
         center_y = self.y + text_object.get_height() // 2
         text_location = p.Rect(self.x + 5, self.y + 5, self.w - 10, self.y - 10)
         title_location = p.Rect(self.x + 5, self.y - 15, self.w - 10, self.y - 10)
-        p.draw.rect(self.screen, colors[1], p.Rect(self.x - 1, self.y - 1, self.w, self.h))
-        p.draw.rect(self.screen, colors[0], p.Rect(self.x, self.y, self.w, self.h))
+        p.draw.rect(self.screen, self.background_color, p.Rect(self.x - 1, self.y - 1, self.w, self.h))
+        p.draw.rect(self.screen, self.current_color, p.Rect(self.x, self.y, self.w, self.h))
         self.screen.blit(text_object, text_location)
         self.screen.blit(title_object, title_location)
 
+    #Determines if a button is clicked
+    def is_clicked(self, location):
+        if self.x < location[0] < self.x + self.w and self.y < location[1] < self.y + self.h:
+            return True
+        else:
+            return False
 
+    def change_button(self):
+        self.rotate_colors()
+        self.current_color = self.colors[0]
+        if self.current_color == p.Color("white"):
+            self.text = "Play as white"
+            self.background_color = p.Color("black")
+        elif self.current_color == p.Color("dark gray"):
+            self.text = "Play as bot"
+            self.background_color = p.Color("black")
+        else:
+            self.text = "Play as black"
+            self.background_color = p.Color("white")
+
+    def rotate_colors(self):
+        self.colors = self.colors[1:] + self.colors[:1]
+    
+    def update_player(self):
+        if self.current_color == p.Color("white"):
+            self.player = "white"
+        elif self.current_color == p.Color("black"):
+            self.player = "black"
+        else:
+            self.player = "bot"
 
         
 if __name__ == "__main__":
