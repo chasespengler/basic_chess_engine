@@ -10,4 +10,4 @@ This project is constructed using the pygame module for python. This provided a 
 forward to using some of the built in sprite features and discovering more functionality in the future for an 8bit style rpg I've been designing for some time.
 
 This project is currently a work in progress. It is entirely functional and quite fun, however I will be adding more levels of bots to play against as well as 
-reviewing logic and pygame updates for improvements intermittently. Feel free to reach out to contribute a bot to add or just to play a game of chess!
+reviewing logic and pygame updates for improvements intermittently. Feel free to reach out to contribute a bot to add to the program or just to play a game of chess!
