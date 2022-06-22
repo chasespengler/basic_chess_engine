@@ -139,10 +139,15 @@ def play_game(screen, player_one, player_two, clock, enable_undo, enable_animati
     elif not player_one and not player_two:
         botvbot = True
 
-    if bl == 1:
-        bl_move = chess_ai.random_move
-    else:
-        bl_move = chess_ai.min_max_move
+    if not player_one or not player_two:
+        if bl == 1:
+            bl_move = chess_ai.random_move
+        elif bl == 2:
+            bl_move = chess_ai.greedy_1
+        elif bl == 3:
+            bl_move = chess_ai.greed_multi
+        else:
+            bl_move = chess_ai.min_max_move
 
     #Initialize gamestate
     screen.fill(p.Color("white"))
@@ -218,7 +223,7 @@ def play_game(screen, player_one, player_two, clock, enable_undo, enable_animati
                 #AI Moves
                 if playing and not humans_turn:
                     #if (gs.white_turn and not player_one) or (gs.black_turn and not player_two):
-                    bot_move = bl_move(current_valid_moves)
+                    bot_move = bl_move(gs, current_valid_moves)
                     gs.make_move(bot_move)
                     move_made = True
                     undo = False
