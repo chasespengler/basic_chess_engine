@@ -33,12 +33,12 @@ def main():
     clock = p.time.Clock()
     p.display.set_caption("Chase's Chess")
 
-    loading_screen, p1, p2 = title_screen(screen, clock)
+    loading_screen, p1, p2, b1, b2 = title_screen(screen, clock)
     player_one = True if p1 != "bot" else False
     player_two = True if p2 != "bot" else False
 
     if not loading_screen:
-        play_game(screen, player_one, player_two, clock, enable_undo, enable_animation)
+        play_game(screen, player_one, player_two, clock, enable_undo, enable_animation, b1, b2)
 
 #Loading screen function
 def title_screen(screen, clock):
@@ -73,7 +73,12 @@ def title_screen(screen, clock):
     play_as2.draw_button()
     start_button = button(screen, "", "START GAME", x_loc + 29, y_end - 65, w - 58, 40, True, False)
     start_button.draw_button()
-
+    bot_level_1 = button(screen, "Bot Level", "1", x_loc + 30, y_loc + 100, 100, 50, True, False)
+    bot_level_2 = button(screen, "Bot Level", "1", x_end - 130, y_loc + 100, 100, 50, True, False)
+    bot_level_1.draw_button()
+    bot_level_2.draw_button()
+    b1 = 1
+    b2 = 1
 
     while running:
         for e in p.event.get():
@@ -100,12 +105,20 @@ def title_screen(screen, clock):
                     else:
                         start_button.title = "Select valid matchup"
                         start_button.draw_button()
+                elif bot_level_1.is_clicked(location):
+                    bot_level_1.update_bot()
+                    bot_level_1.draw_button()
+                    b1 = int(bot_level_1.text)
+                elif bot_level_2.is_clicked(location):
+                    bot_level_2.update_bot()
+                    bot_level_2.draw_button()
+                    b2 = int(bot_level_2.text)
 
             clock.tick(max_fps)
             p.display.flip()
 
 
-    return loading_screen, p1, p2
+    return loading_screen, p1, p2, b1, b2
 
 #Checks for player assignments, returns player 1's color, player 2's color, and if the matchup is playable i.e. not white vs white or black vs black
 def check_players(p1, p2):
@@ -116,7 +129,21 @@ def check_players(p1, p2):
 
 
 #Main game function
-def play_game(screen, player_one, player_two, clock, enable_undo, enable_animation, bot_level = 0):
+def play_game(screen, player_one, player_two, clock, enable_undo, enable_animation, b1, b2):
+    #Bot selection logic
+    botvbot = False
+    if not player_one:
+        bl = b1
+    elif not player_two:
+        bl = b2
+    elif not player_one and not player_two:
+        botvbot = True
+
+    if bl == 1:
+        bl_move = chess_ai.random_move
+    else:
+        bl_move = chess_ai.min_max_move
+
     #Initialize gamestate
     screen.fill(p.Color("white"))
     gs = chess_engine.game_board()
@@ -133,97 +160,98 @@ def play_game(screen, player_one, player_two, clock, enable_undo, enable_animati
     playing = True
     reset = False
 
-    while running:
-        for e in p.event.get():
-            humans_turn = (gs.white_turn and player_one) or (gs.black_turn and player_two)
-            if e.type == p.QUIT:
-                running = False
-            #Mouse Handler
-            elif e.type == p.MOUSEBUTTONDOWN:
-                # (x, y) location of mouse
-                location = p.mouse.get_pos()
+    if not botvbot:
+        while running:
+            for e in p.event.get():
+                humans_turn = (gs.white_turn and player_one) or (gs.black_turn and player_two)
+                if e.type == p.QUIT:
+                    running = False
+                #Mouse Handler
+                elif e.type == p.MOUSEBUTTONDOWN:
+                    # (x, y) location of mouse
+                    location = p.mouse.get_pos()
 
-                if playing and humans_turn:
-                    #since board is entire screen, there is no need to reset based off origin
-                    col = location[0] // SQ_size
-                    row = location[1] // SQ_size
-                    #check to see if piece is moved to a different square
-                    if selected_sq == (row, col):
+                    if playing and humans_turn:
+                        #since board is entire screen, there is no need to reset based off origin
+                        col = location[0] // SQ_size
+                        row = location[1] // SQ_size
+                        #check to see if piece is moved to a different square
+                        if selected_sq == (row, col):
+                            selected_sq = ()
+                            player_clicks = []
+                        else:
+                            selected_sq = (row, col)
+                            player_clicks.append(selected_sq)
+                        #check to see if the click was the second click indicating piece has been moved
+                        if len(player_clicks) == 2:
+                            #determine how the board plays the move as well as retain the move log
+                            move = chess_engine.move(player_clicks[0], player_clicks[1], gs.board)
+                            #checking validity
+                            for i in range(len(current_valid_moves)):
+                                if move == current_valid_moves[i]:
+                                    gs.make_move(current_valid_moves[i])
+                                    undo = False
+                                    move_made = True
+                                    selected_sq = ()
+                                    player_clicks = []
+                            #added to minimize number of clicks when trying to make move
+                            #player can now change selected piece without needing to deselect current piece
+                            if not move_made:
+                                player_clicks = [selected_sq]
+
+                #Key Handlers
+                elif e.type == p.KEYDOWN:
+                    #Undo button when z is pressed
+                    if e.key == p.K_z and enable_undo:
+                        gs.undo_move()
+                        undo = True
+                        move_made = True
+                    #Resets board when r is pressed
+                    elif e.key == p.K_r:
+                        gs = chess_engine.game_board()
+                        current_valid_moves = gs.valid_moves()
                         selected_sq = ()
                         player_clicks = []
-                    else:
-                        selected_sq = (row, col)
-                        player_clicks.append(selected_sq)
-                    #check to see if the click was the second click indicating piece has been moved
-                    if len(player_clicks) == 2:
-                        #determine how the board plays the move as well as retain the move log
-                        move = chess_engine.move(player_clicks[0], player_clicks[1], gs.board)
-                        #checking validity
-                        for i in range(len(current_valid_moves)):
-                            if move == current_valid_moves[i]:
-                                gs.make_move(current_valid_moves[i])
-                                undo = False
-                                move_made = True
-                                selected_sq = ()
-                                player_clicks = []
-                        #added to minimize number of clicks when trying to make move
-                        #player can now change selected piece without needing to deselect current piece
-                        if not move_made:
-                            player_clicks = [selected_sq]
+                        move_made = False
+                        reset = True
 
-            #Key Handlers
-            elif e.type == p.KEYDOWN:
-                #Undo button when z is pressed
-                if e.key == p.K_z and enable_undo:
-                    gs.undo_move()
-                    undo = True
+                #AI Moves
+                if playing and not humans_turn:
+                    #if (gs.white_turn and not player_one) or (gs.black_turn and not player_two):
+                    bot_move = bl_move(current_valid_moves)
+                    gs.make_move(bot_move)
                     move_made = True
-                #Resets board when r is pressed
-                elif e.key == p.K_r:
-                    gs = chess_engine.game_board()
+                    undo = False
+
+                #Regenerate current valid moves and animate
+                if move_made:
+                    if enable_animation and not undo:
+                        animate(screen, gs.move_log[-1], gs.board, clock)
                     current_valid_moves = gs.valid_moves()
-                    selected_sq = ()
-                    player_clicks = []
                     move_made = False
-                    reset = True
 
-            #AI Moves
-            if playing and not humans_turn:
-                #if (gs.white_turn and not player_one) or (gs.black_turn and not player_two):
-                bot_move = chess_ai.random_move(current_valid_moves)
-                gs.make_move(bot_move)
-                move_made = True
-                undo = False
+                draw_game_board(screen, gs, current_valid_moves, selected_sq)
 
-            #Regenerate current valid moves and animate
-            if move_made:
-                if enable_animation and not undo:
-                    animate(screen, gs.move_log[-1], gs.board, clock)
-                current_valid_moves = gs.valid_moves()
-                move_made = False
+                #Checking for stalemate and checkmate
+                if gs.stalemate:
+                    draw_text(screen, "Stalemate", 0)
+                    playing = False
+                elif gs.white_checkmate:
+                    draw_text(screen, "Black wins by checkmate", 0)
+                    playing = False
+                elif gs.black_checkmate:
+                    draw_text(screen, "White wins by checkmate", 0)
+                    playing = False
 
-            draw_game_board(screen, gs, current_valid_moves, selected_sq)
-
-            #Checking for stalemate and checkmate
-            if gs.stalemate:
-                draw_text(screen, "Stalemate", 0)
-                playing = False
-            elif gs.white_checkmate:
-                draw_text(screen, "Black wins by checkmate", 0)
-                playing = False
-            elif gs.black_checkmate:
-                draw_text(screen, "White wins by checkmate", 0)
-                playing = False
-
-            '''
-            #Posts "RESET" to the screen and fades out
-            if reset:
-                reset = False
-                for i in range(255, 0, -5):
-                    p.event.post(draw_text(screen, "RESET", i))
-            '''
-            clock.tick(max_fps)
-            p.display.flip()
+                '''
+                #Posts "RESET" to the screen and fades out
+                if reset:
+                    reset = False
+                    for i in range(255, 0, -5):
+                        p.event.post(draw_text(screen, "RESET", i))
+                '''
+                clock.tick(max_fps)
+                p.display.flip()
 
 #Responsible for all graphics within a current game state.
 def draw_game_board(screen, gs, valid_moves, selected_sq):
@@ -398,6 +426,12 @@ class button():
             self.player = "black"
         else:
             self.player = "bot"
+
+    def update_bot(self):
+        if int(self.text) < 5:
+            self.text = str(int(self.text) + 1)
+        else:
+            self.text = "1"
 
         
 if __name__ == "__main__":
