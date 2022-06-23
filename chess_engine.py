@@ -17,6 +17,7 @@ class game_board():
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
         ])
 
+        '''
         self.board = np.array([
             ['--', '--', '--', '--', '--', '--', '--', 'bK'],
             ['bP', '--', '--', 'bN', '--', '--', 'bP', 'bP'],
@@ -26,6 +27,7 @@ class game_board():
             ['wP', 'wP', '--', '--', '--', '--', '--', '--'],
             ['--', '--', 'wQ', 'wP', 'wP', '--', '--', '--'],
             ['wR', 'wN', 'wB', '--', 'wK', '--', '--', 'bQ']])
+        '''
 
         #Variables storing which player's turn it is
         self.white_turn = True
