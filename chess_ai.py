@@ -68,6 +68,9 @@ def greedy_multi(gs, valid_moves):
             opponent_moves = gs.valid_moves()
             best_opp = greedy_1(gs, opponent_moves)
             gs.make_move(best_opp)
+            print(gs.board)
+            print(gs.white_checkmate)
+            print(gs.white_in_check)
             if gs.white_checkmate or gs.black_checkmate or gs.stalemate:
                 gs.undo_move()
                 gs.undo_move()
@@ -101,10 +104,50 @@ def greedy_multi(gs, valid_moves):
 def min_max_move(gs, valid_moves):
     '''
     Min max algorithm for bot play
-    Bot Level 4
     '''
     turn = 1 if gs.white_turn else -1
     opp_min_max_score = CM
+    best_moves = []
+    opp_min_max_moves = []
+    for move in valid_moves:
+        gs.make_move(move)
+        opp_moves = gs.valid_moves()
+        opp_max_score = -CM
+        for opp_move in opp_moves:
+            gs.make_move(opp_move)
+            score = turn * material_score(gs.board)
+            if score > opp_max_score:
+                opp_max_score = score
+                opp_best_move = opp_move
+                if opp_max_score < opp_min_max_score:
+                    best_moves = []
+                    opp_min_max_moves = []
+                    opp_min_max_score = opp_max_score
+                    opp_min_max_move = opp_best_move
+                    best_moves.append(move)
+                    opp_min_max_moves.append(opp_min_max_move)
+                elif opp_max_score == opp_min_max_score:
+                    best_moves.append(move)
+                    opp_min_max_moves.append(opp_min_max_move)
+            gs.undo_move()
+        gs.undo_move()
+
+    best_move = random_move(gs, best_moves)
+    opp_best_move = random_move(gs, opp_min_max_moves)
+    return best_move, opp_best_move
+
+def min_max_5(gs, valid_moves):
+    i = 30
+    for i in range(i):
+        move1, move2 = min_max_move(gs, valid_moves)
+        gs.make_move(move1)
+        gs.make_move(move2)
+    
+    for i in range(i):
+        gs.undo_move()
+        gs.undo_move()
+
+    return move1
 
 def material_score(board):
     '''
