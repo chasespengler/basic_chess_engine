@@ -17,6 +17,16 @@ class game_board():
             ["wR", "wN", "wB", "wQ", "wK", "wB", "wN", "wR"]
         ])
 
+        self.board = np.array([
+            ['--', '--', '--', '--', '--', '--', '--', 'bK'],
+            ['bP', '--', '--', 'bN', '--', '--', 'bP', 'bP'],
+            ['--', 'bP', '--', '--', '--', 'bP', '--', '--'],
+            ['--', '--', 'bB', '--', 'bP', '--', '--', 'bB'],
+            ['--', '--', '--', 'bP', '--', 'wP', '--', 'wP'],
+            ['wP', 'wP', '--', '--', '--', '--', '--', '--'],
+            ['--', '--', 'wQ', 'wP', 'wP', '--', '--', '--'],
+            ['wR', 'wN', 'wB', '--', 'wK', '--', '--', 'bQ']])
+
         #Variables storing which player's turn it is
         self.white_turn = True
         self.black_turn = False
@@ -435,6 +445,8 @@ class game_board():
                             return True
                         elif piece == "bP" and j >= 6 and i == 1:
                             return True
+                        elif piece == "bP":
+                            break
                     elif self.black_turn and j < 4:
                         if piece == "wQ" or piece == "wR":
                             return True   
@@ -443,6 +455,8 @@ class game_board():
                             return True
                         elif piece == "wP" and j < 6 and i == 1:
                             return True
+                        elif piece == "wP":
+                            break
                 else:
                     break
 
