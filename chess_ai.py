@@ -19,7 +19,7 @@ def random_move(gs, valid_moves):
         ind = random.randint(0, len(valid_moves) - 1)
         move = valid_moves[ind]
         return move
-    return None
+    return "No valid moves"
 
 def greedy_1(gs, valid_moves):
     '''
@@ -52,6 +52,7 @@ def greedy_multi(gs, valid_moves):
     '''
     Algorithm to decide a move based on point advantage projected out several moves
     Bot Level 3
+    Really buggy currently. Weird rook or castling logic bug. Also weird nonetype move return.
     '''
     turn = 1 if gs.white_turn else -1
     max_score = -CM
@@ -59,11 +60,31 @@ def greedy_multi(gs, valid_moves):
     for move in valid_moves:
         gs.make_move(move)
         if gs.white_checkmate or gs.black_checkmate:
-            score = CM
+            gs.undo_move()
+            return move
         elif gs.stalemate:
             score = SM
         else:
+            opponent_moves = gs.valid_moves()
+            best_opp = greedy_1(gs, opponent_moves)
+            gs.make_move(best_opp)
+            if gs.white_checkmate or gs.black_checkmate or gs.stalemate:
+                gs.undo_move()
+                gs.undo_move()
+                return greedy_1(gs, valid_moves)
+            ahead_moves = gs.valid_moves()
+            if not ahead_moves:
+                print(gs.board)
+                gs.undo_move()
+                print(gs.board)
+                gs.undo_move()
+                print(gs.board)
+            best_ahead_move = greedy_1(gs, ahead_moves)
+            print("Ahead ", best_ahead_move.piece_moved)
+            gs.make_move(best_ahead_move)
             score = turn * material_score(gs.board)
+            gs.undo_move()
+            gs.undo_move()
         if score > max_score:
             best_moves = []
             max_score = score
@@ -73,18 +94,17 @@ def greedy_multi(gs, valid_moves):
         gs.undo_move()
 
     best_move = random_move(gs, best_moves)
+    print(best_moves)
+    print("Best Move ", best_move.piece_moved)
     return best_move
 
 def min_max_move(gs, valid_moves):
     '''
     Min max algorithm for bot play
-    Bot Level 3
+    Bot Level 4
     '''
-    if valid_moves:
-        ind = random.randint(0, len(valid_moves) - 1)
-        move = valid_moves[ind]
-        return move
-    return None
+    turn = 1 if gs.white_turn else -1
+    opp_min_max_score = CM
 
 def material_score(board):
     '''
