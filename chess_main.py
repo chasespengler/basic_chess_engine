@@ -145,7 +145,7 @@ def play_game(screen, player_one, player_two, clock, enable_undo, enable_animati
         elif bl == 2:
             bl_move = chess_ai.greedy_1
         elif bl == 3:
-            bl_move = chess_ai.greed_multi
+            bl_move = chess_ai.greedy_multi
         else:
             bl_move = chess_ai.min_max_move
 
@@ -219,6 +219,12 @@ def play_game(screen, player_one, player_two, clock, enable_undo, enable_animati
                         player_clicks = []
                         move_made = False
                         reset = True
+                    #Double undo for bot play
+                    elif e.key == p.K_t:
+                        gs.undo_move()
+                        gs.undo_move()
+                        undo = True
+                        move_made = True
 
                 #AI Moves
                 if playing and not humans_turn:
