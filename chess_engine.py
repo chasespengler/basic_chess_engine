@@ -447,8 +447,6 @@ class game_board():
                             return True
                         elif piece == "bP" and j >= 6 and i == 1:
                             return True
-                        elif piece == "bP":
-                            break
                     elif self.black_turn and j < 4:
                         if piece == "wQ" or piece == "wR":
                             return True   
@@ -457,8 +455,8 @@ class game_board():
                             return True
                         elif piece == "wP" and j < 6 and i == 1:
                             return True
-                        elif piece == "wP":
-                            break
+                    else:
+                        break
                 else:
                     break
 
@@ -674,7 +672,7 @@ class move():
         if self.piece_moved[1] == "K":
             self.qs_castle = True
             self.ks_castle = True
-        elif self.start_col == 0 and (self.start_row == 0 or self.start_row == 7):
+        elif self.start_col == 0 and (self.start_row == 0 or self.start_row == 7) and self.piece_moved[1] == "R":
             self.qs_castle = True
         elif self.start_col == 7 and (self.start_row == 0 or self.start_row == 7):
             self.ks_castle = True
