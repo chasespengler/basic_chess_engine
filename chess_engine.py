@@ -149,15 +149,37 @@ class game_board():
                     self.board[last_move.end_row][0] = "wR" if self.white_turn else "bR"
 
             #Castling Ability
-            if self.white_turn:
-                if last_move.qs_castle:
+            first_castlew = True
+            first_castleb = True
+            first_qsw = True
+            first_ksw = True
+            first_qsb = True
+            first_ksb = True
+            for move in self.move_log:
+                if move.piece_moved[0] == "w":
+                    if move.qs_castle and move.ks_castle:
+                        first_castlew = False
+                    elif move.qs_castle:
+                        first_qsw = False
+                    elif move.ks_castle:
+                        first_ksw = False
+                elif move.piece_moved[0] == "b":
+                    if move.qs_castle and move.ks_castle:
+                        first_castleb = False
+                    elif move.qs_castle:
+                        first_qsb = False
+                    elif move.ks_castle:
+                        first_ksb = False
+
+            if self.white_turn and first_castlew:
+                if last_move.qs_castle and first_qsw:
                     self.white_qs_castleability = True
-                if last_move.ks_castle:
+                if last_move.ks_castle and first_ksw:
                     self.white_ks_castleability = True
-            else:
-                if last_move.qs_castle:
+            elif self.black_turn and first_castleb:
+                if last_move.qs_castle and first_qsb:
                     self.black_qs_castleability = True
-                if last_move.ks_castle:
+                if last_move.ks_castle and first_ksb:
                     self.black_ks_castleability = True
                             
             #Updating king location
@@ -674,7 +696,7 @@ class move():
             self.ks_castle = True
         elif self.start_col == 0 and (self.start_row == 0 or self.start_row == 7) and self.piece_moved[1] == "R":
             self.qs_castle = True
-        elif self.start_col == 7 and (self.start_row == 0 or self.start_row == 7):
+        elif self.start_col == 7 and (self.start_row == 0 or self.start_row == 7) and self.piece_moved[1] == "R":
             self.ks_castle = True
 
     #To enable comparison between objects (like checking for valid moves)
