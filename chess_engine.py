@@ -569,7 +569,7 @@ class game_board():
                         adj_pos = (end_pos[0] + vect[0], end_pos[1] + vect[1])
                         if 0 <= adj_pos[0] <= 7 and 0 <= adj_pos[1] <= 7:
                             if self.board[adj_pos[0], adj_pos[1]] == "bK":
-                                z = current_moves.pop[i]
+                                z = current_moves.pop(i)
                 i -= 1
         else:
             i = len(current_moves) - 1
