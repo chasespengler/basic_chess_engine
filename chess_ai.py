@@ -59,6 +59,7 @@ def greedy_multi(gs, valid_moves):
     for move in valid_moves:
         #Bot move 1
         gs.make_move(move)
+        opponent_moves = gs.valid_moves()
         #If move results in opponent checkmate then return move immediately
         if gs.white_checkmate or gs.black_checkmate:
             #Undo bot move 1
@@ -67,10 +68,10 @@ def greedy_multi(gs, valid_moves):
         elif gs.stalemate:
             score = SM
         else:
-            opponent_moves = gs.valid_moves()
             best_opp = greedy_1(gs, opponent_moves)
             #Opponent move 1
             gs.make_move(best_opp)
+            gs.valid_moves()
             if gs.white_checkmate or gs.black_checkmate or gs.stalemate:
                 #Undo opponent move
                 gs.undo_move()
@@ -110,16 +111,17 @@ def min_max_move(gs, valid_moves):
     opp_min_max_moves = []
     for move in valid_moves:
         gs.make_move(move)
+        opp_moves = gs.valid_moves()
         if gs.white_checkmate or gs.black_checkmate:
             return move
         elif gs.stalemate:
             #Make a stalemate move if alternative ends in checkmate? Maybe it doesn't need to be that smart
             st_move = move
             continue
-        opp_moves = gs.valid_moves()
         opp_max_score = -CM
         for opp_move in opp_moves:
             gs.make_move(opp_move)
+            gs.valid_moves()
             if gs.white_checkmate or gs.black_checkmate:
                 score = CM
             elif gs.stalemate:
