@@ -441,7 +441,7 @@ class button():
             self.player = "bot"
 
     def update_bot(self):
-        if int(self.text) < 5:
+        if int(self.text) < 9:
             self.text = str(int(self.text) + 1)
         else:
             self.text = "1"
