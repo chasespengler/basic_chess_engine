@@ -146,8 +146,10 @@ def play_game(screen, player_one, player_two, clock, enable_undo, enable_animati
             bl_move = chess_ai.greedy_1
         elif bl == 3:
             bl_move = chess_ai.greedy_multi
+        elif bl == 4:
+            bl_move = chess_ai.min_max_move
         else:
-            bl_move = chess_ai.min_max_5
+            bl_move = chess_ai.min_max_multi
 
     #Initialize gamestate
     screen.fill(p.Color("white"))
