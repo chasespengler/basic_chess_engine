@@ -129,17 +129,17 @@ def min_max_move(gs, valid_moves):
             if score > opp_max_score:
                 opp_max_score = score
                 opp_best_move = opp_move
-                if opp_max_score < opp_min_max_score:
-                    best_moves = []
-                    opp_min_max_moves = []
-                    opp_min_max_score = opp_max_score
-                    opp_min_max_move = opp_best_move
-                    best_moves.append(move)
-                    opp_min_max_moves.append(opp_min_max_move)
-                elif opp_max_score == opp_min_max_score:
-                    best_moves.append(move)
-                    opp_min_max_moves.append(opp_min_max_move)
             gs.undo_move()
+        if opp_max_score < opp_min_max_score:
+            best_moves = []
+            opp_min_max_moves = []
+            opp_min_max_score = opp_max_score
+            opp_min_max_move = opp_best_move
+            best_moves.append(move)
+            opp_min_max_moves.append(opp_min_max_move)
+        elif opp_max_score == opp_min_max_score:
+            best_moves.append(move)
+            opp_min_max_moves.append(opp_min_max_move)  
         gs.undo_move()
 
     best_move = random_move(gs, best_moves)
