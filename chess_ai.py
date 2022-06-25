@@ -71,7 +71,6 @@ def greedy_multi(gs, valid_moves):
             best_opp = greedy_1(gs, opponent_moves)
             #Opponent move 1
             gs.make_move(best_opp)
-            gs.valid_moves()
             if gs.white_checkmate or gs.black_checkmate or gs.stalemate:
                 #Undo opponent move
                 gs.undo_move()
@@ -121,7 +120,6 @@ def min_max_move(gs, valid_moves):
         opp_max_score = -CM
         for opp_move in opp_moves:
             gs.make_move(opp_move)
-            gs.valid_moves()
             if gs.white_checkmate or gs.black_checkmate:
                 score = CM
             elif gs.stalemate:
